@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CalendarDays, MoveRight } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 export default function TicketCard({ ticket }) {
   return (
@@ -50,7 +50,7 @@ export default function TicketCard({ ticket }) {
                 {ticket.features.map((feature) => (
                   <div className="feature-item" key={feature}>
                     <div className="feature-icon">
-                      <MoveRight size={16} />
+                      <Check size={16} />
                     </div>
 
                     <div className="feature-text">{feature}</div>

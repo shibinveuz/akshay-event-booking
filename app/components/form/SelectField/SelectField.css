@@ -1,0 +1,39 @@
+.css-2a2v9e,
+.css-2a2v9e input,
+.css-2a2v9e input:active,
+.css-2a2v9e input:focus-visible,
+.css-2a2v9e input:focus {
+  outline: none !important;
+  border-radius: 0px !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+.css-2a2v9e {
+  margin: 0 !important;
+}
+.css-hlgwow {
+  padding: 0px 8px !important;
+}
+.css-qj9jhh {
+  margin: 0px !important;
+  padding-bottom: 0px !important;
+  padding-top: 0px !important;
+}
+.css-vraxq6 {
+  margin: 0px !important;
+  padding-bottom: 0px !important;
+  padding-top: 0px !important;
+}
+.form-label {
+  max-width: 85% !important;
+}
+@media (max-width: 1024px) {
+  .form-label {
+    max-width: 80% !important;
+  }
+}
+@media (max-width: 991px) {
+  .form-label {
+    max-width: 80%;
+  }
+}

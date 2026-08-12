@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Alexandria:wght@100..900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Alexandria:wght@100..900&display=swap");
 
 * {
   margin: 0;
@@ -11,7 +11,13 @@
   --secondary-color: #039400;
   --white-color: #ffffff;
   --black-color: #050505;
-  --gradient: linear-gradient(221deg, #6bac08 0%, #087500 27.4%, #6cb202 72.12%, #112b1f 100%);
+  --gradient: linear-gradient(
+    221deg,
+    #6bac08 0%,
+    #087500 27.4%,
+    #6cb202 72.12%,
+    #112b1f 100%
+  );
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   --border-radius: 15px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -20,7 +26,13 @@
   --label-font-size-focused: 0.75rem;
   --text-gray: #666;
   --border-color: #e0e0e0;
-  --party-color-btn: linear-gradient(221deg, #f900fa 0%, #fd00fc 27.4%, #310173 72.12%, #300474 100%);
+  --party-color-btn: linear-gradient(
+    221deg,
+    #f900fa 0%,
+    #fd00fc 27.4%,
+    #310173 72.12%,
+    #300474 100%
+  );
   --glass-2: rgba(255, 255, 255, 0.03);
 }
 
@@ -63,10 +75,12 @@ html {
 }
 
 .top-header-second-out {
-  background: linear-gradient(90deg,
-      #a4fe01 0%,
-      #a4fe01 19.25%,
-      #a4fe01 31.35%);
+  background: linear-gradient(
+    90deg,
+    #a4fe01 0%,
+    #a4fe01 19.25%,
+    #a4fe01 31.35%
+  );
 }
 
 .top-header-second {
@@ -96,7 +110,6 @@ html {
   transition: all 0.3s ease-in-out;
   color: #fff;
 }
-
 
 .left-top-header-sec span {
   font-weight: 400;
@@ -197,14 +210,14 @@ html {
   transform: translateX(100%);
 }
 
-.right-top-header-sec>a {
+.right-top-header-sec > a {
   color: #fff;
   background: #090909;
   border: 1px solid #ffffff1f;
   width: 100%;
 }
 
-.right-top-header-sec>a {
+.right-top-header-sec > a {
   border-radius: 5px;
   padding: 4px 30px;
   color: #fff;
@@ -217,31 +230,33 @@ html {
   width: max-content;
 }
 
-.right-top-header-sec>a:hover {
+.right-top-header-sec > a:hover {
   background: var(--gradient);
   color: #fff;
 }
 
-
 /* ======================== olddddd ====================================== */
-
 
 :root {
   --primary-color: #087500;
   --secondary-color: #039400;
   --white-color: #ffffff;
   --black-color: #050505;
-  --gradient: linear-gradient(221deg,
-      #6bac08 0%,
-      #087500 27.4%,
-      #6cb202 72.12%,
-      #112b1f 100%);
+  --gradient: linear-gradient(
+    221deg,
+    #6bac08 0%,
+    #087500 27.4%,
+    #6cb202 72.12%,
+    #112b1f 100%
+  );
 
-  --secondary-gradient: linear-gradient(221deg,
-      #7dc744 0%,
-      #3ec042 25%,
-      #41a446 55%,
-      #153d18 100%);
+  --secondary-gradient: linear-gradient(
+    221deg,
+    #7dc744 0%,
+    #3ec042 25%,
+    #41a446 55%,
+    #153d18 100%
+  );
 
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   --border-radius: 15px;
@@ -251,11 +266,13 @@ html {
   --label-font-size-focused: 0.75rem;
   --text-gray: #666;
   --border-color: #e0e0e0;
-  --party-color-btn: linear-gradient(221deg,
-      #f900fa 0%,
-      #fd00fc 27.4%,
-      #310173 72.12%,
-      #300474 100%);
+  --party-color-btn: linear-gradient(
+    221deg,
+    #f900fa 0%,
+    #fd00fc 27.4%,
+    #310173 72.12%,
+    #300474 100%
+  );
   --glass-2: rgba(255, 255, 255, 0.03);
 }
 
@@ -422,7 +439,7 @@ a {
 
 .floating-label {
   position: relative;
-
+  /* margin-bottom: 1.5rem; */
   width: 100%;
   background-color: #fff !important;
 }
@@ -477,10 +494,10 @@ a {
   box-shadow: 0 0 0 3px rgba(1, 14, 255, 0.1);
 }
 
-.floating-label input:focus:not([type="tel"])+label,
-.floating-label input:not(:placeholder-shown):not([type="tel"])+label,
-.floating-label textarea:focus+label,
-.floating-label textarea:not(:placeholder-shown)+label,
+.floating-label input:focus:not([type="tel"]) + label,
+.floating-label input:not(:placeholder-shown):not([type="tel"]) + label,
+.floating-label textarea:focus + label,
+.floating-label textarea:not(:placeholder-shown) + label,
 .floating-label.has-value label {
   top: 0;
   transform: translateY(-50%);
@@ -489,8 +506,8 @@ a {
   font-weight: 500;
 }
 
-.floating-label select:focus+label,
-.floating-label select:not(:placeholder-shown)+label,
+.floating-label select:focus + label,
+.floating-label select:not(:placeholder-shown) + label,
 .floating-label.has-select-value label {
   top: 0;
   transform: translateY(-50%);
@@ -706,7 +723,7 @@ a {
 }
 
 .floating-label.has-select-value label,
-.floating-label .select2-container--focus+label {
+.floating-label .select2-container--focus + label {
   top: 0;
   transform: translateY(-50%);
   font-size: var(--label-font-size-focused);
@@ -733,7 +750,8 @@ a {
   z-index: 9999 !important;
 }
 
-.select2-container--default .select2-results__option--highlighted[aria-selected] {
+.select2-container--default
+  .select2-results__option--highlighted[aria-selected] {
   background-color: var(--primary-color) !important;
   color: white !important;
 }
@@ -750,7 +768,9 @@ a {
   height: 45px;
 }
 
-.select2-container--default .select2-search--dropdown .select2-search__field:focus {
+.select2-container--default
+  .select2-search--dropdown
+  .select2-search__field:focus {
   border-color: var(--primary-color) !important;
   outline: none !important;
 }
@@ -1291,7 +1311,7 @@ a {
   background: #f7f8f9;
 }
 
-.registration-visa-modal form>.row {
+.registration-visa-modal form > .row {
   --bs-gutter-x: 30px;
   margin-bottom: 20px;
 }
@@ -1377,11 +1397,11 @@ a {
 }
 
 @media (max-width: 767px) {
-  .registration-visa-modal form>.row {
+  .registration-visa-modal form > .row {
     margin-bottom: 0;
   }
 
-  .registration-visa-modal form>.row>div {
+  .registration-visa-modal form > .row > div {
     margin-bottom: 18px;
   }
 
@@ -1528,10 +1548,12 @@ a {
 }
 
 .btn-save {
-  background: linear-gradient(45deg,
-      var(--primary-color),
-      var(--secondary-color),
-      var(--primary-color));
+  background: linear-gradient(
+    45deg,
+    var(--primary-color),
+    var(--secondary-color),
+    var(--primary-color)
+  );
   border: none;
   color: #fff !important;
 }
@@ -1748,15 +1770,17 @@ a {
   margin-top: 6px;
 }
 
-.form-check-input:checked+.form-check-label {
+.form-check-input:checked + .form-check-label {
   color: #28a745 !important;
   font-weight: 400;
 }
 
 .form-check.terms-checked {
-  background: linear-gradient(135deg,
-      rgba(40, 167, 69, 0.1) 0%,
-      rgba(32, 201, 151, 0.1) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(40, 167, 69, 0.1) 0%,
+    rgba(32, 201, 151, 0.1) 100%
+  );
   border: 1px solid #28a745;
   box-shadow: 0 4px 12px rgba(40, 167, 69, 0.1);
 }
@@ -1788,13 +1812,14 @@ a {
   content: "";
   width: 100%;
   height: 100%;
-  background-image: url("/assets/images/loader-abstract.png");
+  background-image: url("/assets/img/loader-abstract.png");
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
   top: 0px;
   left: 0px;
   opacity: 0.6;
+  z-index: -1;
 }
 
 .main-loader img {
@@ -1968,10 +1993,12 @@ a {
   left: -120%;
   width: 40%;
   height: 100%;
-  background: linear-gradient(90deg,
-      transparent,
-      rgba(255, 255, 255, 0.7),
-      transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.7),
+    transparent
+  );
   transform: skewX(-20deg);
   pointer-events: none;
   animation: headerSheen 1.6s linear infinite;
@@ -2046,10 +2073,12 @@ a {
 }
 
 .top-header-second-out {
-  background: linear-gradient(90deg,
-      #a4fe01 0%,
-      #a4fe01 19.25%,
-      #a4fe01 31.35%);
+  background: linear-gradient(
+    90deg,
+    #a4fe01 0%,
+    #a4fe01 19.25%,
+    #a4fe01 31.35%
+  );
   /* border-top: 1px solid;
     border-bottom: 1px solid; */
 }
@@ -2404,7 +2433,6 @@ a {
 }
 
 @keyframes float {
-
   0%,
   100% {
     transform: translateY(0) rotate(0deg);
@@ -2535,8 +2563,8 @@ a {
 }
 
 /* Fallback for browsers that support :not(:placeholder-shown) */
-.input-field:focus+.input-label,
-.input-field:not(:placeholder-shown)+.input-label {
+.input-field:focus + .input-label,
+.input-field:not(:placeholder-shown) + .input-label {
   top: -16px;
   left: 20px;
   font-size: 13px;
@@ -2587,10 +2615,12 @@ a {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg,
-      transparent,
-      rgba(255, 255, 255, 0.3),
-      transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
   transition: left 0.5s ease;
 }
 
@@ -2694,7 +2724,6 @@ a {
 }
 
 @keyframes shake {
-
   0%,
   100% {
     transform: translateX(0);
@@ -2954,10 +2983,12 @@ a {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: linear-gradient(45deg,
-      transparent,
-      rgba(255, 255, 255, 0.2),
-      transparent);
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
   animation: shimmer 3s infinite;
 }
 
@@ -3384,11 +3415,11 @@ td {
   background-color: #008800;
 }
 
-.btn-check:checked+.btn,
+.btn-check:checked + .btn,
 .btn.active,
 .btn.show,
 .btn:first-child:active,
-:not(.btn-check)+.btn:active {
+:not(.btn-check) + .btn:active {
   outline: none;
   box-shadow: none;
   border: none;
@@ -3844,7 +3875,8 @@ td {
 
 /* upgrade ticket */
 
-.select2-container--default.select2-container--disabled .select2-selection--single {
+.select2-container--default.select2-container--disabled
+  .select2-selection--single {
   background: transparent !important;
 }
 
@@ -4819,11 +4851,13 @@ td {
   position: relative;
   z-index: 2;
   overflow: hidden;
-  background: linear-gradient(221deg,
-      #6bac08 0%,
-      #087500 27.4%,
-      #6cb202 72.12%,
-      #112b1f 100%);
+  background: linear-gradient(
+    221deg,
+    #6bac08 0%,
+    #087500 27.4%,
+    #6cb202 72.12%,
+    #112b1f 100%
+  );
 }
 
 /* background layer */
@@ -4839,7 +4873,6 @@ td {
 }
 
 @keyframes zoomBg {
-
   0%,
   100% {
     transform: scale(1);
@@ -4857,10 +4890,12 @@ td {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: linear-gradient(45deg,
-      transparent,
-      rgba(255, 255, 255, 0.2),
-      transparent);
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
   animation: shimmer 3s infinite;
 }
 
@@ -4899,10 +4934,12 @@ td {
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: linear-gradient(45deg,
-      var(--primary-color),
-      var(--secondary-color),
-      var(--primary-color));
+  background: linear-gradient(
+    45deg,
+    var(--primary-color),
+    var(--secondary-color),
+    var(--primary-color)
+  );
   border-radius: 12px;
   z-index: -1;
   opacity: 0;
@@ -4941,11 +4978,13 @@ td {
   position: relative;
   overflow: hidden;
   box-shadow: 0 4px 15px rgba(106, 151, 175, 0.43);
-  background: linear-gradient(221deg,
-      #6bac08 0%,
-      #087500 27.4%,
-      #6cb202 72.12%,
-      #112b1f 100%);
+  background: linear-gradient(
+    221deg,
+    #6bac08 0%,
+    #087500 27.4%,
+    #6cb202 72.12%,
+    #112b1f 100%
+  );
   border-radius: 0 0px 20px 20px;
 }
 
@@ -4969,10 +5008,12 @@ td {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: linear-gradient(45deg,
-      transparent,
-      rgba(255, 255, 255, 0.2),
-      transparent);
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
   animation: badgeShine 4s infinite;
 }
 
@@ -4986,7 +5027,7 @@ td {
   }
 }
 
-.visitor-badge>div:last-child {
+.visitor-badge > div:last-child {
   font-size: 2.1rem;
   font-weight: 900;
   letter-spacing: 4px;
@@ -5426,7 +5467,7 @@ td {
   color: white;
   border-bottom: none;
   padding: 1.25rem 1.5rem;
-  background-image: url("/assets/images/badge-header.png");
+  background-image: url("/assets/img/badge-header.png");
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
@@ -5434,7 +5475,6 @@ td {
 }
 
 @keyframes backgroundZoom {
-
   0%,
   100% {
     background-size: 100% auto;
@@ -6088,11 +6128,13 @@ td {
 
 .reg-form-promodiv-bg {
   position: relative;
-  background: linear-gradient(221deg,
-      #6bac08 0%,
-      #087500 27.4%,
-      #6cb202 72.12%,
-      #112b1f 100%);
+  background: linear-gradient(
+    221deg,
+    #6bac08 0%,
+    #087500 27.4%,
+    #6cb202 72.12%,
+    #112b1f 100%
+  );
   padding: 20px 40px;
   overflow: hidden;
 }
@@ -6170,11 +6212,13 @@ td {
 }
 
 .promo-bg-btn {
-  background: linear-gradient(221deg,
-      #f00 0%,
-      #ff5252 29.46%,
-      #f00 60.58%,
-      #c02825 81.2%);
+  background: linear-gradient(
+    221deg,
+    #f00 0%,
+    #ff5252 29.46%,
+    #f00 60.58%,
+    #c02825 81.2%
+  );
   color: #fff !important;
   display: flex;
   align-items: center;
@@ -6558,10 +6602,12 @@ td {
   left: -75%;
   width: 50%;
   height: 100%;
-  background: linear-gradient(120deg,
-      transparent,
-      rgba(255, 255, 255, 0.1),
-      transparent);
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
   animation: shine 4s ease-in-out infinite;
 }
 
@@ -7036,6 +7082,7 @@ td {
 
 .cmp-check-box-div .tick-wrong {
   background: gray !important;
+  padding: 2.5px;
 }
 
 /* Comparison view keeps a clean table treatment like the reference. */
@@ -7420,6 +7467,7 @@ td {
 
   .cmp-check-box-div .tick-mark {
     font-size: 18px;
+    padding: 2.5px;
   }
 
   .cm-header {
@@ -8156,11 +8204,13 @@ td {
   align-items: center;
   justify-content: space-between;
   overflow: hidden;
-  background: linear-gradient(221deg,
-      #6bac08 0%,
-      #087500 27.4%,
-      #6cb202 72.12%,
-      #112b1f 100%);
+  background: linear-gradient(
+    221deg,
+    #6bac08 0%,
+    #087500 27.4%,
+    #6cb202 72.12%,
+    #112b1f 100%
+  );
 }
 
 .price-header::after {
@@ -8269,14 +8319,16 @@ td {
 
 /* ticket purple color */
 .ticket-bg-purple-gr .cm-header {
-  background: linear-gradient(138deg,
-      #fe40d4 0%,
-      #a62ac5 35.05%,
-      #9325c2 42.68%,
-      #8124ca 50.48%,
-      #8121bf 54.13%,
-      #521783 71.86%,
-      #170a36 100%);
+  background: linear-gradient(
+    138deg,
+    #fe40d4 0%,
+    #a62ac5 35.05%,
+    #9325c2 42.68%,
+    #8124ca 50.48%,
+    #8121bf 54.13%,
+    #521783 71.86%,
+    #170a36 100%
+  );
 }
 
 /* multi-color compare view */
@@ -8628,10 +8680,12 @@ td {
   width: 100%;
   height: 100%;
 
-  background: linear-gradient(90deg,
-      transparent,
-      rgba(255, 255, 255, 0.25),
-      transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.25),
+    transparent
+  );
 
   transition: 0.7s;
 }
@@ -8737,47 +8791,55 @@ td {
 }
 
 .ticket-bg-purple-gr .price-header {
-  background: linear-gradient(138deg,
-      #fe40d4 0%,
-      #a62ac5 35.05%,
-      #9325c2 42.68%,
-      #8124ca 50.48%,
-      #8121bf 54.13%,
-      #521783 71.86%,
-      #170a36 100%);
+  background: linear-gradient(
+    138deg,
+    #fe40d4 0%,
+    #a62ac5 35.05%,
+    #9325c2 42.68%,
+    #8124ca 50.48%,
+    #8121bf 54.13%,
+    #521783 71.86%,
+    #170a36 100%
+  );
 }
 
 .ticket-bg-purple-gr .reg-form-promodiv-bg {
-  background: linear-gradient(138deg,
-      #fe40d4 0%,
-      #a62ac5 35.05%,
-      #9325c2 42.68%,
-      #8124ca 50.48%,
-      #8121bf 54.13%,
-      #521783 71.86%,
-      #170a36 100%);
+  background: linear-gradient(
+    138deg,
+    #fe40d4 0%,
+    #a62ac5 35.05%,
+    #9325c2 42.68%,
+    #8124ca 50.48%,
+    #8121bf 54.13%,
+    #521783 71.86%,
+    #170a36 100%
+  );
 }
 
 .ticket-bg-purple-gr .badge-preview-header {
-  background: linear-gradient(138deg,
-      #fe40d4 0%,
-      #a62ac5 35.05%,
-      #9325c2 42.68%,
-      #8124ca 50.48%,
-      #8121bf 54.13%,
-      #521783 71.86%,
-      #170a36 100%);
+  background: linear-gradient(
+    138deg,
+    #fe40d4 0%,
+    #a62ac5 35.05%,
+    #9325c2 42.68%,
+    #8124ca 50.48%,
+    #8121bf 54.13%,
+    #521783 71.86%,
+    #170a36 100%
+  );
 }
 
 .ticket-bg-purple-gr .visitor-badge {
-  background: linear-gradient(138deg,
-      #fe40d4 0%,
-      #a62ac5 35.05%,
-      #9325c2 42.68%,
-      #8124ca 50.48%,
-      #8121bf 54.13%,
-      #521783 71.86%,
-      #170a36 100%);
+  background: linear-gradient(
+    138deg,
+    #fe40d4 0%,
+    #a62ac5 35.05%,
+    #9325c2 42.68%,
+    #8124ca 50.48%,
+    #8121bf 54.13%,
+    #521783 71.86%,
+    #170a36 100%
+  );
 }
 
 .ticket-bg-purple-gr .change-pass {
@@ -8797,10 +8859,12 @@ td {
 }
 
 .ticket-bg-purple-gr.visitor-selected-ticket {
-  background: linear-gradient(138deg,
-      #c211bf21 0%,
-      #ffffff17 64.66%,
-      #ffffff1f 100%);
+  background: linear-gradient(
+    138deg,
+    #c211bf21 0%,
+    #ffffff17 64.66%,
+    #ffffff1f 100%
+  );
 }
 
 .ticket-bg-orange.visitor-selected-ticket {
@@ -8842,47 +8906,55 @@ td {
 }
 
 .ticket-bg-premium-buyer .price-header {
-  background: linear-gradient(138deg,
-      rgb(17 17 17) 0%,
-      rgb(20, 18, 18) 35.05%,
-      rgb(8, 8, 8) 42.68%,
-      rgb(0, 0, 0) 50.48%,
-      rgb(0, 0, 0) 54.13%,
-      rgb(0, 0, 0) 71.86%,
-      rgb(31 31 31) 100%);
+  background: linear-gradient(
+    138deg,
+    rgb(17 17 17) 0%,
+    rgb(20, 18, 18) 35.05%,
+    rgb(8, 8, 8) 42.68%,
+    rgb(0, 0, 0) 50.48%,
+    rgb(0, 0, 0) 54.13%,
+    rgb(0, 0, 0) 71.86%,
+    rgb(31 31 31) 100%
+  );
 }
 
 .ticket-bg-premium-buyer .reg-form-promodiv-bg {
-  background: linear-gradient(138deg,
-      rgb(17 17 17) 0%,
-      rgb(20, 18, 18) 35.05%,
-      rgb(8, 8, 8) 42.68%,
-      rgb(0, 0, 0) 50.48%,
-      rgb(0, 0, 0) 54.13%,
-      rgb(0, 0, 0) 71.86%,
-      rgb(31 31 31) 100%);
+  background: linear-gradient(
+    138deg,
+    rgb(17 17 17) 0%,
+    rgb(20, 18, 18) 35.05%,
+    rgb(8, 8, 8) 42.68%,
+    rgb(0, 0, 0) 50.48%,
+    rgb(0, 0, 0) 54.13%,
+    rgb(0, 0, 0) 71.86%,
+    rgb(31 31 31) 100%
+  );
 }
 
 .ticket-bg-premium-buyer .badge-preview-header {
-  background: linear-gradient(138deg,
-      rgb(17 17 17) 0%,
-      rgb(20, 18, 18) 35.05%,
-      rgb(8, 8, 8) 42.68%,
-      rgb(0, 0, 0) 50.48%,
-      rgb(0, 0, 0) 54.13%,
-      rgb(0, 0, 0) 71.86%,
-      rgb(31 31 31) 100%);
+  background: linear-gradient(
+    138deg,
+    rgb(17 17 17) 0%,
+    rgb(20, 18, 18) 35.05%,
+    rgb(8, 8, 8) 42.68%,
+    rgb(0, 0, 0) 50.48%,
+    rgb(0, 0, 0) 54.13%,
+    rgb(0, 0, 0) 71.86%,
+    rgb(31 31 31) 100%
+  );
 }
 
 .ticket-bg-premium-buyer .visitor-badge {
-  background: linear-gradient(138deg,
-      rgb(17 17 17) 0%,
-      rgb(20, 18, 18) 35.05%,
-      rgb(8, 8, 8) 42.68%,
-      rgb(0, 0, 0) 50.48%,
-      rgb(0, 0, 0) 54.13%,
-      rgb(0, 0, 0) 71.86%,
-      rgb(31 31 31) 100%);
+  background: linear-gradient(
+    138deg,
+    rgb(17 17 17) 0%,
+    rgb(20, 18, 18) 35.05%,
+    rgb(8, 8, 8) 42.68%,
+    rgb(0, 0, 0) 50.48%,
+    rgb(0, 0, 0) 54.13%,
+    rgb(0, 0, 0) 71.86%,
+    rgb(31 31 31) 100%
+  );
 }
 
 .ticket-bg-premium-buyer .old-price {
@@ -8894,14 +8966,16 @@ td {
 }
 
 .ticket-bg-premium-buyer .cm-header {
-  background: linear-gradient(138deg,
-      rgb(17 17 17) 0%,
-      rgb(20, 18, 18) 35.05%,
-      rgb(8, 8, 8) 42.68%,
-      rgb(0, 0, 0) 50.48%,
-      rgb(0, 0, 0) 54.13%,
-      rgb(0, 0, 0) 71.86%,
-      rgb(31 31 31) 100%);
+  background: linear-gradient(
+    138deg,
+    rgb(17 17 17) 0%,
+    rgb(20, 18, 18) 35.05%,
+    rgb(8, 8, 8) 42.68%,
+    rgb(0, 0, 0) 50.48%,
+    rgb(0, 0, 0) 54.13%,
+    rgb(0, 0, 0) 71.86%,
+    rgb(31 31 31) 100%
+  );
 }
 
 .ticket-bg-premium-buyer .cm-header .premium-button {
@@ -8980,12 +9054,6 @@ td {
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
 }
 
-.modal-header {
-  border: none;
-  padding: 0;
-  display: block;
-}
-
 .modal-footer {
   border-top: 1px solid var(--brand-line);
   padding: 16px 24px;
@@ -9016,7 +9084,6 @@ td {
 }
 
 @keyframes party-shake {
-
   0%,
   100% {
     transform: rotate(0);
@@ -9245,7 +9312,7 @@ td {
   --ticket-soft: #f7f7f7;
 }
 
-#cardView>.row {
+#cardView > .row {
   --bs-gutter-x: 30px;
   --bs-gutter-y: 30px;
 }

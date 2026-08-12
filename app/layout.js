@@ -7,6 +7,8 @@ import Header from "./components/common/headers/Header";
 import Providers from "./providers";
 import Footer from "./components/common/footers/Footer";
 
+import Loader from "./components/common/loader/Loader";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -27,6 +29,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
         <Providers>
+          <Loader />
           <Header />
           <main>{children}</main>
           <Footer />

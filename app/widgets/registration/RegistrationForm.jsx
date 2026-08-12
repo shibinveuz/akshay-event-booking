@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import InterestSelection from "./InterestSelection";
@@ -8,9 +8,14 @@ import TermsSection from "./TermsSection";
 import SelectedPass from "./SelectedPass";
 import PromoCode from "./PromoCode";
 import BadgePreview from "./BadgePreview";
+import RegistrationMessageModal from "./RegistrationMessageModal";
+
 import PhoneField from "@/app/components/form/PhoneField/PhoneField";
 import InputField from "@/app/components/form/InputField";
-import SelectField from "@/app/components/form/SelectField";
+import SelectField from "@/app/components/form/SelectField/SelectField";
+import VisaApplyModal from "./VisaApplyModal";
+
+const REMINDER_TIME = 30 * 60 * 1000;
 
 const initialFormData = {
   firstName: "",
@@ -20,7 +25,7 @@ const initialFormData = {
   email: "",
   confirmemail: "",
   mobile: "",
-  phoneCode: "",
+  phoneCode: "234",
   company: "",
   jobTitle: "",
 
@@ -31,31 +36,125 @@ const initialFormData = {
   ageConfirm: false,
 
   promoCode: "",
+
+  visa_required: "",
 };
 
 export default function RegistrationForm({ countries = [], selectedTicket }) {
+  const router = useRouter();
+
   const [formData, setFormData] = useState(initialFormData);
 
   const [errors, setErrors] = useState({});
 
-  const router = useRouter();
-
-  const [showSuccess, setShowSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const selectedCountry = useMemo(
-    () =>
-      countries.find(
-        (country) => country.value === formData.countryofresidence,
-      ),
-    [countries, formData.countryofresidence],
-  );
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  const phoneCode = formData.phoneCode || selectedCountry?.phoneCode || "234";
+  const [showReminderModal, setShowReminderModal] = useState(false);
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
+  const submittedRef = useRef(false);
 
+  const reminderTimerRef = useRef(null);
+
+  const [visaRequired, setVisaRequired] = useState("");
+  const [showVisaModal, setShowVisaModal] = useState(false);
+
+  const [visaForm, setVisaForm] = useState({
+    passport_fullname: "",
+    visa_dob: {
+      dd: "",
+      mm: "",
+      yyyy: "",
+    },
+    passport_number: "",
+    passport_expiry_date: {
+      dd: "",
+      mm: "",
+      yyyy: "",
+    },
+    passport_nationality: "",
+    passport_country: "",
+  });
+
+  const setVisaField = (name, value) => {
+    setVisaForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+  };
+
+  const setVisaDateField = (group, field, value) => {
+    setVisaForm((previous) => ({
+      ...previous,
+      [group]: {
+        ...previous[group],
+        [field]: value,
+      },
+    }));
+  };
+
+  const HOSTING_COUNTRY = process.env.NEXT_PUBLIC_HOSTING_COUNTRY || "NG";
+
+  const showVisaQuestion =
+    formData.countryofresidence &&
+    formData.nationality &&
+    formData.countryofresidence !== HOSTING_COUNTRY &&
+    formData.nationality !== HOSTING_COUNTRY;
+
+  /*
+   * ----------------------------------------------------
+   * COUNTRY OPTIONS
+   * ----------------------------------------------------
+   */
+
+  const countryOptions = useMemo(() => {
+    return countries.map((country) => ({
+      ...country,
+
+      label: country.label || country.name || country.country_name || "",
+
+      value:
+        country.value ||
+        country.code ||
+        country.country_code ||
+        country.id ||
+        "",
+    }));
+  }, [countries]);
+
+  /*
+   * ----------------------------------------------------
+   * SELECTED COUNTRY
+   * ----------------------------------------------------
+   */
+
+  const selectedCountry = useMemo(() => {
+    return countryOptions.find(
+      (country) =>
+        String(country.value) === String(formData.countryofresidence),
+    );
+  }, [countryOptions, formData.countryofresidence]);
+
+  /*
+   * ----------------------------------------------------
+   * PHONE CODE
+   * ----------------------------------------------------
+   */
+
+  const phoneCode =
+    formData.phoneCode ||
+    selectedCountry?.phoneCode ||
+    selectedCountry?.phone_code ||
+    "234";
+
+  /*
+   * ----------------------------------------------------
+   * GENERIC SET FIELD
+   * ----------------------------------------------------
+   */
+
+  const setField = (name, value) => {
     setFormData((previous) => ({
       ...previous,
       [name]: value,
@@ -67,19 +166,68 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
     }));
   };
 
+  /*
+   * ----------------------------------------------------
+   * NORMAL INPUT CHANGE
+   * ----------------------------------------------------
+   */
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    setField(name, value);
+  };
+
+  /*
+   * ----------------------------------------------------
+   * CHECKBOX CHANGE
+   * ----------------------------------------------------
+   */
+
   const handleCheckboxChange = (event) => {
     const { name, checked } = event.target;
 
+    setField(name, checked);
+  };
+
+  /*
+   * ----------------------------------------------------
+   * COUNTRY CHANGE
+   * ----------------------------------------------------
+   */
+
+  const handleCountryChange = (event) => {
+    const { value } = event.target;
+
+    const country = countryOptions.find(
+      (item) => String(item.value) === String(value),
+    );
+
+    const newPhoneCode = String(
+      country?.phoneCode || country?.phone_code || "234",
+    ).replace(/^\+/, "");
+
     setFormData((previous) => ({
       ...previous,
-      [name]: checked,
+
+      countryofresidence: value,
+
+      phoneCode: newPhoneCode,
     }));
 
     setErrors((previous) => ({
       ...previous,
-      [name]: "",
+
+      countryofresidence: "",
+      phoneCode: "",
     }));
   };
+
+  /*
+   * ----------------------------------------------------
+   * VALIDATION
+   * ----------------------------------------------------
+   */
 
   const validateForm = () => {
     const validationErrors = {};
@@ -102,9 +250,16 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
 
     if (!formData.email.trim()) {
       validationErrors.email = "Email address is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      validationErrors.email = "Please enter a valid email address.";
     }
 
-    if (formData.email !== formData.confirmemail) {
+    if (!formData.confirmemail.trim()) {
+      validationErrors.confirmemail = "Please confirm your email address.";
+    } else if (
+      formData.email.trim().toLowerCase() !==
+      formData.confirmemail.trim().toLowerCase()
+    ) {
       validationErrors.confirmemail = "Email addresses do not match.";
     }
 
@@ -132,64 +287,109 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
       validationErrors.ageConfirm = "Age confirmation is required.";
     }
 
+    if (showVisaQuestion && !formData.visa_required) {
+      validationErrors.visa_required =
+        "Please select whether you require a visa invitation letter.";
+    }
+
     return validationErrors;
   };
+
+  /*
+   * ----------------------------------------------------
+   * SUBMIT
+   * ----------------------------------------------------
+   */
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    // Clear previous errors
+    if (submitting) {
+      return;
+    }
+
     setErrors({});
 
-    // Validate form
     const validationErrors = validateForm();
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+
+      const firstErrorField = Object.keys(validationErrors)[0];
+
+      window.setTimeout(() => {
+        document.getElementById(firstErrorField)?.focus();
+      }, 0);
+
       return;
     }
+
+    const cleanMobile = formData.mobile.replace(/\D/g, "");
+
+    const cleanPhoneCode = String(phoneCode).replace(/^\+/, "");
 
     const payload = {
       ...formData,
 
-      mobileFull: `${phoneCode}${formData.mobile}`,
+      phoneCode: cleanPhoneCode,
 
-      ticketId: selectedTicket?.id,
+      mobile: cleanMobile,
+
+      mobileFull: `+${cleanPhoneCode}${cleanMobile}`,
+
+      ticketId: selectedTicket?.id ?? null,
     };
-
-    console.log("Registration payload:", payload);
 
     try {
       setSubmitting(true);
 
+      console.log("Registration payload:", payload);
+
       /*
-       * ==========================================
-       * REAL API INTEGRATION WILL GO HERE LATER
-       * ==========================================
+       * ==================================================
+       * REAL API / SERVER ACTION WILL GO HERE
+       * ==================================================
        *
-       * Example:
-       *
-       * const result = await submitRegistration(payload);
+       * const result =
+       *   await submitRegistrationAction(payload);
        *
        * if (!result?.success) {
        *   throw new Error(
-       *     result?.message || "Registration failed"
+       *     result?.message ||
+       *     "Registration failed."
        *   );
        * }
        */
 
-      // Temporary success behavior
-      setShowSuccess(true);
+      /*
+       * Registration success
+       */
+      submittedRef.current = true;
 
-      // Redirect after showing popup
-      setTimeout(() => {
-        router.push("/confirmation");
-      }, 2000);
+      /*
+       * Clear reminder timer
+       */
+      if (reminderTimerRef.current) {
+        window.clearTimeout(reminderTimerRef.current);
+
+        reminderTimerRef.current = null;
+      }
+
+      /*
+       * Close reminder if it is open
+       */
+      setShowReminderModal(false);
+
+      /*
+       * Show success modal
+       */
+      setShowSuccessModal(true);
     } catch (error) {
       console.error("Registration failed:", error);
 
       setErrors((previous) => ({
         ...previous,
+
         submit: error?.message || "Something went wrong. Please try again.",
       }));
     } finally {
@@ -197,14 +397,89 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
     }
   };
 
+  const handleVisaSubmit = () => {
+    console.log("Visa application:", visaForm);
+
+    /*
+     * Later:
+     *
+     * const result = await submitVisaApplicationAction(visaForm);
+     */
+
+    setShowVisaModal(false);
+  };
+
+  /*
+   * ----------------------------------------------------
+   * PROMO VALIDATE
+   * ----------------------------------------------------
+   */
+
   const handlePromoValidate = () => {
     console.log("Validate promo:", formData.promoCode);
   };
 
+  /*
+   * ----------------------------------------------------
+   * SUCCESS MODAL CONFIRM
+   * ----------------------------------------------------
+   */
+
+  const handleSuccessConfirm = () => {
+    setShowSuccessModal(false);
+
+    router.push("/confirmation");
+  };
+
+  /*
+   * ----------------------------------------------------
+   * REMINDER MODAL CONFIRM
+   * ----------------------------------------------------
+   */
+
+  const handleReminderConfirm = () => {
+    setShowReminderModal(false);
+
+    window.setTimeout(() => {
+      document.querySelector("#registrationForm")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+  };
+
+  /*
+   * ----------------------------------------------------
+   * 30 MINUTE REMINDER
+   * ----------------------------------------------------
+   */
+
+  useEffect(() => {
+    reminderTimerRef.current = window.setTimeout(() => {
+      if (!submittedRef.current) {
+        setShowReminderModal(true);
+      }
+    }, REMINDER_TIME);
+
+    return () => {
+      if (reminderTimerRef.current) {
+        window.clearTimeout(reminderTimerRef.current);
+      }
+    };
+  }, []);
+
+  /*
+   * ----------------------------------------------------
+   * RENDER
+   * ----------------------------------------------------
+   */
+
   return (
     <>
       <div className="main-badge-wrapper">
-        {/* LEFT FORM */}
+        {/* ====================================== */}
+        {/* LEFT - REGISTRATION FORM */}
+        {/* ====================================== */}
 
         <div className="main-badge-wrapper-right">
           <div className="card form-card">
@@ -213,8 +488,10 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
             </div>
 
             <div className="card-body p-4">
-              <form noValidate onSubmit={handleSubmit}>
+              <form id="registrationForm" noValidate onSubmit={handleSubmit}>
                 <div className="row">
+                  {/* FIRST NAME */}
+
                   <div className="col-12 col-sm-6">
                     <InputField
                       id="firstName"
@@ -227,6 +504,8 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
                       required
                     />
                   </div>
+
+                  {/* LAST NAME */}
 
                   <div className="col-12 col-sm-6">
                     <InputField
@@ -241,18 +520,22 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
                     />
                   </div>
 
+                  {/* COUNTRY OF RESIDENCE */}
+
                   <div className="col-12 col-sm-6">
                     <SelectField
                       id="countryofresidence"
                       name="countryofresidence"
                       label="Country of Residence"
                       value={formData.countryofresidence}
-                      onChange={handleChange}
-                      options={countries}
+                      options={countryOptions}
+                      onChange={handleCountryChange}
                       error={errors.countryofresidence}
                       required
                     />
                   </div>
+
+                  {/* NATIONALITY */}
 
                   <div className="col-12 col-sm-6">
                     <SelectField
@@ -260,12 +543,14 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
                       name="nationality"
                       label="Nationality"
                       value={formData.nationality}
+                      options={countryOptions}
                       onChange={handleChange}
-                      options={countries}
                       error={errors.nationality}
                       required
                     />
                   </div>
+
+                  {/* EMAIL */}
 
                   <div className="col-12 col-sm-6">
                     <InputField
@@ -277,9 +562,12 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
                       onChange={handleChange}
                       error={errors.email}
                       autoComplete="email"
+                      onCopy={(event) => event.preventDefault()}
                       required
                     />
                   </div>
+
+                  {/* CONFIRM EMAIL */}
 
                   <div className="col-12 col-sm-6">
                     <InputField
@@ -291,21 +579,23 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
                       onChange={handleChange}
                       error={errors.confirmemail}
                       autoComplete="off"
+                      onPaste={(event) => event.preventDefault()}
                       required
                     />
                   </div>
 
+                  {/* PHONE */}
+
                   <div className="col-md-6">
                     <PhoneField
-                      id="mobile"
-                      name="mobile"
-                      value={formData.mobile}
-                      phoneCode={phoneCode}
-                      onChange={handleChange}
+                      fields={formData}
+                      setField={setField}
                       error={errors.mobile}
-                      required
+                      countriesList={countries}
                     />
                   </div>
+
+                  {/* COMPANY */}
 
                   <div className="col-lg-6">
                     <InputField
@@ -319,6 +609,8 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
                       required
                     />
                   </div>
+
+                  {/* JOB TITLE */}
 
                   <div className="col-md-6">
                     <InputField
@@ -334,21 +626,71 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
                   </div>
                 </div>
 
+                {/* ====================================== */}
+                {/* INTERESTS */}
+                {/* ====================================== */}
+
                 <InterestSelection
                   selected={formData.interests}
-                  onChange={(interests) => {
-                    setFormData((previous) => ({
-                      ...previous,
-                      interests,
-                    }));
-
-                    setErrors((previous) => ({
-                      ...previous,
-                      interests: "",
-                    }));
-                  }}
+                  onChange={(interests) => setField("interests", interests)}
                   error={errors.interests}
                 />
+
+                {/* {showVisaQuestion && ( */}
+                <div className="mt-2 mb-4 d-flex">
+                  <label style={{ marginRight: 10 }}>
+                    Do you need a visa invitation letter?
+                    <span className="required"> *</span>
+                  </label>
+
+                  <br className="visa-break-lg" />
+
+                  <label>
+                    <input
+                      type="radio"
+                      name="visa_required"
+                      value="yes"
+                      checked={formData.visa_required === "yes"}
+                      onChange={() => {
+                        setField("visa_required", "yes");
+                        setVisaRequired("yes");
+                        setShowVisaModal(true);
+                      }}
+                      style={{ marginRight: 5 }}
+                    />
+                    Yes
+                  </label>
+
+                  <label style={{ marginLeft: 10 }}>
+                    <input
+                      type="radio"
+                      name="visa_required"
+                      value="no"
+                      checked={formData.visa_required === "no"}
+                      onChange={() => {
+                        setField("visa_required", "no");
+                        setVisaRequired("no");
+                        setShowVisaModal(false);
+                      }}
+                      style={{ marginRight: 5 }}
+                    />
+                    No
+                  </label>
+
+                  {errors.visa_required && (
+                    <div
+                      className="invalid-feedback"
+                      style={{ display: "block" }}
+                    >
+                      {errors.visa_required}
+                    </div>
+                  )}
+                </div>
+                {/* )} */}
+
+                {/* ====================================== */}
+                {/* TERMS */}
+                {/* ====================================== */}
 
                 <TermsSection
                   formData={formData}
@@ -356,9 +698,27 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
                   onCheckboxChange={handleCheckboxChange}
                 />
 
+                {/* ====================================== */}
+                {/* API ERROR */}
+                {/* ====================================== */}
+
+                {errors.submit && (
+                  <div className="alert alert-danger mt-3" role="alert">
+                    {errors.submit}
+                  </div>
+                )}
+
+                {/* ====================================== */}
+                {/* SUBMIT BUTTON */}
+                {/* ====================================== */}
+
                 <div className="footer-btn">
-                  <button type="submit" className="btn btn-primary2">
-                    Complete Registration
+                  <button
+                    type="submit"
+                    className="btn btn-primary2"
+                    disabled={submitting || showSuccessModal}
+                  >
+                    {submitting ? "Submitting..." : "Complete Registration"}
                   </button>
                 </div>
               </form>
@@ -366,7 +726,9 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
           </div>
         </div>
 
+        {/* ====================================== */}
         {/* RIGHT SIDE */}
+        {/* ====================================== */}
 
         <div className="main-badge-wrapper-left">
           <div className={`form-right-col ${selectedTicket?.className || ""}`}>
@@ -382,45 +744,40 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
           </div>
         </div>
       </div>
-      {showSuccess && (
-        <div
-          className="modal fade show d-block"
-          tabIndex="-1"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-body text-center p-5">
-                <div className="mb-3">
-                  <span
-                    className="d-inline-flex align-items-center justify-content-center rounded-circle"
-                    style={{
-                      width: "70px",
-                      height: "70px",
-                      fontSize: "32px",
-                    }}
-                  >
-                    ✓
-                  </span>
-                </div>
 
-                <h3>Registration Submitted!</h3>
+      {/* ====================================== */}
+      {/* 30 MINUTE REMINDER MODAL */}
+      {/* ====================================== */}
 
-                <p className="mb-0">
-                  Your registration has been successfully completed.
-                </p>
+      <RegistrationMessageModal
+        show={showReminderModal}
+        type="reminder"
+        onHide={() => setShowReminderModal(false)}
+        onConfirm={handleReminderConfirm}
+      />
 
-                <p className="text-muted mt-2">
-                  Redirecting to confirmation page...
-                </p>
-              </div>
-            </div>
-          </div>
+      {/* ====================================== */}
+      {/* SUCCESS MODAL */}
+      {/* ====================================== */}
 
-          <div className="modal-backdrop fade show" />
-        </div>
-      )}
+      <RegistrationMessageModal
+        show={showSuccessModal}
+        type="success"
+        onHide={() => setShowSuccessModal(false)}
+        onConfirm={handleSuccessConfirm}
+      />
+      {/* ====================================== */}
+
+      <VisaApplyModal
+        show={showVisaModal}
+        onHide={() => setShowVisaModal(false)}
+        visaForm={visaForm}
+        setVisaField={setVisaField}
+        setVisaDateField={setVisaDateField}
+        countries={countries}
+        onSubmit={handleVisaSubmit}
+        isLoading={false}
+      />
     </>
   );
 }
