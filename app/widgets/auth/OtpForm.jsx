@@ -57,6 +57,7 @@ export default function OtpForm({ email, initialOtpToken, onBack }) {
   const [secondsLeft, setSecondsLeft] = useState(OTP_EXPIRY_SECONDS);
 
   const inputRefs = useRef([]);
+  const verificationInFlightRef = useRef(false);
 
   useEffect(() => {
     inputRefs.current[0]?.focus();
@@ -104,6 +105,10 @@ export default function OtpForm({ email, initialOtpToken, onBack }) {
     if (digit && index < OTP_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
     }
+
+    if (updatedOtp.every(Boolean)) {
+      void handleVerify(updatedOtp.join(""));
+    }
   };
 
   const handleKeyDown = (index, event) => {
@@ -141,17 +146,26 @@ export default function OtpForm({ email, initialOtpToken, onBack }) {
     const nextIndex = Math.min(pasted.length, OTP_LENGTH - 1);
 
     inputRefs.current[nextIndex]?.focus();
+
+    if (pasted.length === OTP_LENGTH) {
+      void handleVerify(pasted);
+    }
   };
 
-  const handleVerify = async () => {
-    const code = otp.join("");
+  const handleVerify = async (codeOverride) => {
+    const code = typeof codeOverride === "string" ? codeOverride : otp.join("");
 
     if (code.length !== OTP_LENGTH) {
       setError(`Please enter all ${OTP_LENGTH} digits of the OTP.`);
       return;
     }
 
+    if (verificationInFlightRef.current) {
+      return;
+    }
+
     try {
+      verificationInFlightRef.current = true;
       setVerifying(true);
       setError("");
 
@@ -169,6 +183,7 @@ export default function OtpForm({ email, initialOtpToken, onBack }) {
     } catch (error) {
       setError(error?.message || "OTP verification failed. Please try again.");
     } finally {
+      verificationInFlightRef.current = false;
       setVerifying(false);
     }
   };
@@ -273,13 +288,13 @@ export default function OtpForm({ email, initialOtpToken, onBack }) {
           {verifying ? "Verifying..." : "Verify"}
         </button>
 
-        <button
+        {/* <button
           type="button"
           className="btn btn-link d-block mx-auto mt-3"
           onClick={onBack}
         >
           Change Email Address
-        </button>
+        </button> */}
       </div>
     </>
   );

@@ -12,6 +12,7 @@ import SelectedPass from "./SelectedPass";
 import PromoCode from "./PromoCode";
 import BadgePreview from "./BadgePreview";
 import RegistrationMessageModal from "./RegistrationMessageModal";
+import FileUploadCropper from "@/app/components/common/FileUploadCropper";
 
 import {
   submitRegistrationAction,
@@ -130,6 +131,9 @@ export default function RegistrationForm({
 
   const [formData, setFormData] = useState(initialFormData);
   const [documentFile, setDocumentFile] = useState(null);
+  const [pendingDocumentFile, setPendingDocumentFile] = useState(null);
+  const [pendingDocumentUrl, setPendingDocumentUrl] = useState("");
+  const [showDocumentCropper, setShowDocumentCropper] = useState(false);
 
   const [errors, setErrors] = useState({});
 
@@ -156,10 +160,20 @@ export default function RegistrationForm({
   const submittedRef = useRef(false);
 
   const reminderTimerRef = useRef(null);
+  const documentInputRef = useRef(null);
+  const pendingDocumentUrlRef = useRef("");
 
   const [showVisaModal, setShowVisaModal] = useState(false);
 
   const { visaForm, setVisaField, setVisaDateField } = useVisaForm();
+
+  useEffect(() => {
+    return () => {
+      if (pendingDocumentUrlRef.current) {
+        URL.revokeObjectURL(pendingDocumentUrlRef.current);
+      }
+    };
+  }, []);
 
   const HOSTING_COUNTRY = process.env.NEXT_PUBLIC_HOSTING_COUNTRY || "NG";
 
@@ -396,6 +410,7 @@ export default function RegistrationForm({
 
   const handleDocumentChange = (event) => {
     const file = event.target.files?.[0];
+    event.target.value = "";
 
     if (!file) {
       return;
@@ -406,7 +421,6 @@ export default function RegistrationForm({
         ...previous,
         userDocument: "Please upload a JPEG or PNG image.",
       }));
-      event.target.value = "";
       return;
     }
 
@@ -415,12 +429,56 @@ export default function RegistrationForm({
         ...previous,
         userDocument: "The supporting document must be 5 MB or smaller.",
       }));
-      event.target.value = "";
       return;
     }
 
-    setDocumentFile(file);
+    setPendingDocumentForCrop(file);
+    setShowDocumentCropper(true);
     setErrors((previous) => ({ ...previous, userDocument: "" }));
+  };
+
+  const setPendingDocumentForCrop = (file) => {
+    if (pendingDocumentUrlRef.current) {
+      URL.revokeObjectURL(pendingDocumentUrlRef.current);
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    pendingDocumentUrlRef.current = objectUrl;
+    setPendingDocumentFile(file);
+    setPendingDocumentUrl(objectUrl);
+  };
+
+  const clearPendingDocument = () => {
+    if (pendingDocumentUrlRef.current) {
+      URL.revokeObjectURL(pendingDocumentUrlRef.current);
+      pendingDocumentUrlRef.current = "";
+    }
+
+    setPendingDocumentFile(null);
+    setPendingDocumentUrl("");
+  };
+
+  const handleDocumentCropDone = (croppedFile) => {
+    setDocumentFile(croppedFile);
+    clearPendingDocument();
+    setShowDocumentCropper(false);
+    setErrors((previous) => ({ ...previous, userDocument: "" }));
+  };
+
+  const handleDocumentCropCancel = () => {
+    clearPendingDocument();
+    setShowDocumentCropper(false);
+  };
+
+  const handleDocumentRemove = () => {
+    setDocumentFile(null);
+    clearPendingDocument();
+    setErrors((previous) => ({
+      ...previous,
+      userDocument: selectedTicket?.documentRequired
+        ? "A supporting document is required for this pass."
+        : "",
+    }));
   };
 
   /*
@@ -949,13 +1007,19 @@ export default function RegistrationForm({
                           <span>
                             {(documentFile.size / 1024 / 1024).toFixed(2)} MB
                           </span>
+                          <button
+                            type="button"
+                            onClick={() => documentInputRef.current?.click()}
+                          >
+                            Change image
+                          </button>
                         </div>
                         <button
                           type="button"
                           className="registration-upload-remove"
                           title="Remove document"
                           aria-label="Remove document"
-                          onClick={() => setDocumentFile(null)}
+                          onClick={handleDocumentRemove}
                         >
                           <X aria-hidden="true" size={18} />
                         </button>
@@ -971,6 +1035,7 @@ export default function RegistrationForm({
                       </label>
                     )}
                     <input
+                      ref={documentInputRef}
                       id="userDocument"
                       name="userDocument"
                       type="file"
@@ -1080,6 +1145,18 @@ export default function RegistrationForm({
         onHide={() => setShowSuccessModal(false)}
         onConfirm={handleSuccessConfirm}
       />
+
+      {showDocumentCropper && pendingDocumentFile && (
+        <FileUploadCropper
+          key={pendingDocumentUrl}
+          show
+          sourceFile={pendingDocumentFile}
+          sourceUrl={pendingDocumentUrl}
+          cropType="freesize"
+          onCropDone={handleDocumentCropDone}
+          onCancel={handleDocumentCropCancel}
+        />
+      )}
       {/* ====================================== */}
 
       <VisaApplyModal

@@ -1245,6 +1245,188 @@ a {
   color: #fff;
 }
 
+.file-upload-cropper-modal .modal-content {
+  overflow: hidden;
+  border: 0;
+  border-radius: 10px;
+}
+
+.file-upload-cropper-modal .service-wizard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+}
+
+.cropper-close-button {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+}
+
+.file-upload-cropper-body {
+  overflow: auto;
+  max-height: 70vh;
+  padding: 20px;
+  text-align: center;
+}
+
+.file-upload-cropper-help {
+  margin: 0 0 14px;
+  color: #555;
+  line-height: 1.4;
+}
+
+.file-upload-cropper-stage {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #111;
+  line-height: 0;
+  touch-action: none;
+  user-select: none;
+}
+
+.file-upload-cropper-image {
+  display: block;
+  max-width: 100%;
+  max-height: 55vh;
+  pointer-events: none;
+  user-select: none;
+}
+
+.file-upload-cropper-selection {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid #97ff00;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+  cursor: move;
+  touch-action: none;
+}
+
+.file-upload-cropper-selection::before,
+.file-upload-cropper-selection::after {
+  position: absolute;
+  content: "";
+  pointer-events: none;
+}
+
+.file-upload-cropper-selection::before {
+  inset: 33.333% 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.55);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.55);
+}
+
+.file-upload-cropper-selection::after {
+  inset: 0 33.333%;
+  border-right: 1px solid rgba(255, 255, 255, 0.55);
+  border-left: 1px solid rgba(255, 255, 255, 0.55);
+}
+
+.file-upload-cropper-handle {
+  position: absolute;
+  z-index: 2;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #008b00;
+  touch-action: none;
+}
+
+.file-upload-cropper-handle.handle-nw {
+  top: 0;
+  left: 0;
+  cursor: nwse-resize;
+  transform: translate(-50%, -50%);
+}
+
+.file-upload-cropper-handle.handle-n {
+  top: 0;
+  left: 50%;
+  cursor: ns-resize;
+  transform: translate(-50%, -50%);
+}
+
+.file-upload-cropper-handle.handle-ne {
+  top: 0;
+  right: 0;
+  cursor: nesw-resize;
+  transform: translate(50%, -50%);
+}
+
+.file-upload-cropper-handle.handle-e {
+  top: 50%;
+  right: 0;
+  cursor: ew-resize;
+  transform: translate(50%, -50%);
+}
+
+.file-upload-cropper-handle.handle-se {
+  right: 0;
+  bottom: 0;
+  cursor: nwse-resize;
+  transform: translate(50%, 50%);
+}
+
+.file-upload-cropper-handle.handle-s {
+  bottom: 0;
+  left: 50%;
+  cursor: ns-resize;
+  transform: translate(-50%, 50%);
+}
+
+.file-upload-cropper-handle.handle-sw {
+  bottom: 0;
+  left: 0;
+  cursor: nesw-resize;
+  transform: translate(-50%, 50%);
+}
+
+.file-upload-cropper-handle.handle-w {
+  top: 50%;
+  left: 0;
+  cursor: ew-resize;
+  transform: translate(-50%, -50%);
+}
+
+.file-upload-cropper-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.file-upload-cropper-actions .btn {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+@media (max-width: 575.98px) {
+  .file-upload-cropper-modal .modal-dialog {
+    margin: 10px;
+  }
+
+  .file-upload-cropper-body {
+    padding: 14px;
+  }
+
+  .file-upload-cropper-actions>* {
+    flex: 1 1 auto;
+  }
+}
+
 .registration-crop-image {
   display: block;
   max-width: 100%;
