@@ -1,14 +1,22 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { House } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useCurrency } from "@/app/context/CurrencyContext";
+import { useAuthState } from "@/app/context/AuthStateContext";
 
 export default function HeaderControls({ isAuthenticated = false }) {
   const pathname = usePathname();
 
   const { currency, setCurrency } = useCurrency();
+  const { authenticated: clientAuthState, setAuthenticated } = useAuthState();
+  const authenticated = clientAuthState ?? isAuthenticated;
+
+  useEffect(() => {
+    setAuthenticated(isAuthenticated);
+  }, [isAuthenticated, setAuthenticated]);
 
   const isHomePage = pathname === "/";
   const isLoginPage = pathname === "/login";
@@ -21,7 +29,7 @@ export default function HeaderControls({ isAuthenticated = false }) {
 
   const action = isLoginPage
     ? null
-    : isAuthenticated
+    : authenticated
       ? {
           href: "/visitor-portal",
           label: "Profile Dashboard",

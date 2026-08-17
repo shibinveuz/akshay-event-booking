@@ -7,9 +7,11 @@ import { useRouter } from "next/navigation";
 import { History, LogOut, Menu, User } from "lucide-react";
 import LogoutConfirmModal from "./LogoutConfirmModal";
 import { logoutVisitorAction } from "@/app/lib/api/visitor";
+import { useAuthState } from "@/app/context/AuthStateContext";
 
 export default function VisitorSidebar({ activeTab, onTabChange }) {
   const router = useRouter();
+  const { setAuthenticated } = useAuthState();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -20,8 +22,15 @@ export default function VisitorSidebar({ activeTab, onTabChange }) {
   const confirmLogout = async () => {
     try {
       setLoggingOut(true);
-      await logoutVisitorAction();
+      const result = await logoutVisitorAction();
+
+      if (!result?.success) {
+        throw new Error("Unable to end your session.");
+      }
+
+      setAuthenticated(false);
       router.replace("/login");
+      router.refresh();
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {

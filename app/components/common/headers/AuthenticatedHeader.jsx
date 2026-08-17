@@ -1,9 +1,8 @@
-import { cookies } from "next/headers";
-import { VISITOR_ACCESS_COOKIE } from "@/app/lib/auth-cookies";
+import { getVisitorProfile } from "@/app/lib/api/visitor";
 import Header from "./Header";
 
 export default async function AuthenticatedHeader() {
-  const cookieStore = await cookies();
+  const visitor = await getVisitorProfile();
 
-  return <Header isAuthenticated={cookieStore.has(VISITOR_ACCESS_COOKIE)} />;
+  return <Header isAuthenticated={Boolean(visitor)} />;
 }

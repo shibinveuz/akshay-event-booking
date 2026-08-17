@@ -1,7 +1,10 @@
 "use server";
 
 import "server-only";
+import { cache } from "react";
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
+import { unstable_rethrow } from "next/navigation";
 import {
   LEGACY_VISITOR_DATA_COOKIE,
   VISITOR_ACCESS_COOKIE,
@@ -89,6 +92,7 @@ export async function verifyOtpAction(otpToken, otp, recaptchaToken = "") {
       cookieStore.set(VISITOR_REFRESH_COOKIE, refreshToken, options);
     }
     cookieStore.delete(LEGACY_VISITOR_DATA_COOKIE);
+    revalidatePath("/", "layout");
     return { success: true };
   } catch (error) {
     console.error("OTP verification failed:", error);
@@ -140,7 +144,7 @@ function getVisitorRecord(payload) {
   return envelope?.data ?? envelope;
 }
 
-export async function getVisitorProfile() {
+const getCachedVisitorProfile = cache(async () => {
   try {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get(VISITOR_ACCESS_COOKIE)?.value;
@@ -148,9 +152,14 @@ export async function getVisitorProfile() {
     const payload = await fetchVisitorProfilePayload(accessToken);
     return payload ? mapProfile(payload) : null;
   } catch (error) {
+    unstable_rethrow(error);
     console.error("Unable to fetch visitor profile:", error);
     return null;
   }
+});
+
+export async function getVisitorProfile() {
+  return getCachedVisitorProfile();
 }
 
 function getHistoryItems(payload) {
@@ -248,18 +257,24 @@ export async function logoutVisitorAction() {
       }
     }
 
-    cookieStore.delete(VISITOR_ACCESS_COOKIE);
-    cookieStore.delete(VISITOR_REFRESH_COOKIE);
-    const expiredLoginCookieOptions = {
+    const expiredCookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 0,
+      expires: new Date(0),
+      path: "/",
+    };
+    const expiredLoginCookieOptions = {
+      ...expiredCookieOptions,
       path: "/login",
     };
+    cookieStore.set(VISITOR_ACCESS_COOKIE, "", expiredCookieOptions);
+    cookieStore.set(VISITOR_REFRESH_COOKIE, "", expiredCookieOptions);
     cookieStore.set(VISITOR_ACCESS_COOKIE, "", expiredLoginCookieOptions);
     cookieStore.set(VISITOR_REFRESH_COOKIE, "", expiredLoginCookieOptions);
     cookieStore.delete(LEGACY_VISITOR_DATA_COOKIE);
+    revalidatePath("/", "layout");
     return { success: true };
   } catch (error) {
     console.error("Error in logoutVisitorAction:", error);

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { verifyOtpAction, requestOtpAction } from "@/app/lib/api/visitor";
+import { useAuthState } from "@/app/context/AuthStateContext";
 
 const OTP_LENGTH = 4;
 const OTP_EXPIRY_SECONDS = 5 * 60;
@@ -44,6 +45,7 @@ function executeRecaptcha(siteKey, action) {
 
 export default function OtpForm({ email, initialOtpToken, onBack }) {
   const router = useRouter();
+  const { setAuthenticated } = useAuthState();
 
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(""));
 
@@ -161,7 +163,9 @@ export default function OtpForm({ email, initialOtpToken, onBack }) {
         throw new Error(result?.message || "Invalid OTP code.");
       }
 
+      setAuthenticated(true);
       router.replace("/visitor-portal");
+      router.refresh();
     } catch (error) {
       setError(error?.message || "OTP verification failed. Please try again.");
     } finally {
