@@ -121,17 +121,24 @@ export default function VisitorProfileDetails({
     setApiError("");
     setMessage("");
 
-    const result = await updateVisitorProfileAction(fields);
-    if (!result?.success) {
-      setApiError(result?.message || "Unable to update your profile.");
-      setSaving(false);
-      return;
-    }
+    try {
+      const result = await updateVisitorProfileAction(fields);
+      if (!result?.success) {
+        setApiError(result?.message || "Unable to update your profile.");
+        return;
+      }
 
-    setMessage(result.message || "Your details were updated successfully.");
-    onEditingChange(false);
-    setSaving(false);
-    router.refresh();
+      setMessage(result.message || "Your details were updated successfully.");
+      onEditingChange(false);
+      router.refresh();
+    } catch (error) {
+      console.error("Profile update request failed:", error);
+      setApiError(
+        "The profile request could not reach the server. Check your connection and try again.",
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   const detailFields = [

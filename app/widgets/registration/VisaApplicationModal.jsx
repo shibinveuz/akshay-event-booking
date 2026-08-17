@@ -31,22 +31,30 @@ export default function VisaApplicationModal({
       return;
     }
 
-    setIsLoading(true);
-    const result = await submitVisaApplicationAction({
-      accessContext,
-      registrationId,
-      visaForm,
-    });
-    setIsLoading(false);
+    try {
+      setIsLoading(true);
+      const result = await submitVisaApplicationAction({
+        accessContext,
+        registrationId,
+        visaForm,
+      });
 
-    if (!result?.success) {
-      setError(result?.message || "Unable to submit the visa application.");
-      return;
+      if (!result?.success) {
+        setError(result?.message || "Unable to submit the visa application.");
+        return;
+      }
+
+      setMessage("");
+      onHide();
+      router.refresh();
+    } catch (requestError) {
+      console.error("Visa application request failed:", requestError);
+      setError(
+        "The visa application request could not reach the server. Check your connection and try again.",
+      );
+    } finally {
+      setIsLoading(false);
     }
-
-    setMessage("");
-    onHide();
-    router.refresh();
   };
 
   return (

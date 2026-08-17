@@ -300,6 +300,15 @@ export async function updateVisitorProfileAction(fields) {
     const email =
       currentVisitor?.emailid || currentVisitor?.email || "";
 
+    if (!["yes", "no"].includes(fields.visaRequired)) {
+      return {
+        success: false,
+        message: "Select whether you require a visa invitation letter.",
+      };
+    }
+
+    const requestedVisaRequired = fields.visaRequired === "yes";
+
     if (!firstName || !lastName || !email) {
       return {
         success: false,
@@ -330,7 +339,30 @@ export async function updateVisitorProfileAction(fields) {
           jobtitle: fields.jobTitle?.trim(),
           companytype: fields.companyType || "",
           industry: fields.industry || "",
-          visa_required: fields.visaRequired === "yes",
+          visa_required: requestedVisaRequired,
+          // This endpoint updates the complete registration record. Preserve
+          // visa details saved by VisaApplicationModal so a later profile save
+          // cannot clear or invalidate the visa preference.
+          visa_dob: requestedVisaRequired
+            ? currentVisitor?.visa_dob || null
+            : null,
+          passport_expiry_date:
+            requestedVisaRequired
+              ? currentVisitor?.passport_expiry_date || null
+              : null,
+          passport_nationality:
+            requestedVisaRequired
+              ? currentVisitor?.passport_nationality || ""
+              : "",
+          passport_country: requestedVisaRequired
+            ? currentVisitor?.passport_country || ""
+            : "",
+          passport_fullname: requestedVisaRequired
+            ? currentVisitor?.passport_fullname || ""
+            : "",
+          passport_number: requestedVisaRequired
+            ? currentVisitor?.passport_number || ""
+            : "",
           solutions_products: fields.interestIds || [],
           department: "N/A",
           city: "N/A",
@@ -348,9 +380,12 @@ export async function updateVisitorProfileAction(fields) {
       };
     }
 
+    revalidatePath("/visitor-portal");
+
     return {
       success: true,
       message: data?.message || "Your details were updated successfully.",
+      visaRequested: requestedVisaRequired,
     };
   } catch (error) {
     console.error("Visitor profile update failed:", error);
@@ -422,6 +457,30 @@ function googleCalendarUrl(startDate, endDate, location) {
 function isEnabled(value) {
   return value === true || value === 1 || ["1", "yes", "true"].includes(
     String(value || "").toLowerCase(),
+  );
+}
+
+function getExplicitVisaRequired(visitor) {
+  for (const key of ["visa_required", "visaRequested", "visaRequired"]) {
+    if (visitor?.[key] !== undefined && visitor?.[key] !== null) {
+      return isEnabled(visitor[key]);
+    }
+  }
+
+  return null;
+}
+
+function getVisaRequired(visitor) {
+  const explicitValue = getExplicitVisaRequired(visitor);
+  if (explicitValue !== null) return explicitValue;
+
+  return Boolean(
+    visitor?.visa_dob ||
+      visitor?.passport_expiry_date ||
+      visitor?.passport_nationality ||
+      visitor?.passport_country ||
+      visitor?.passport_fullname ||
+      visitor?.passport_number,
   );
 }
 
@@ -524,7 +583,7 @@ function mapProfile(payload) {
             calendarUrl: defaultEvent.calendarUrl,
           },
         ];
-  const visaRequested = isEnabled(visitor.visa_required);
+  const visaRequested = getVisaRequired(visitor);
 
   return {
     id: visitor.id || uid,
