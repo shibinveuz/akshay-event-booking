@@ -1,5 +1,10 @@
 import Link from "next/link";
 import { Check, X } from "lucide-react";
+import noTicketsAsset from "../../../public/assets/img/ticket.png";
+import Image from "next/image";
+
+const noTickets =
+  typeof noTicketsAsset === "string" ? noTicketsAsset : noTicketsAsset.src;
 
 const comparisonFeatures = [
   "Full Exhibition Access",
@@ -13,9 +18,10 @@ const comparisonFeatures = [
 export default function TicketCompareView({ tickets = [] }) {
   if (!tickets.length) {
     return (
-      <div className="tab-content active mt-5">
-        <div className="text-center py-5">
-          <p>No tickets available for comparison.</p>
+      <div className="tab-content active mt-5 no-ticket-body" id="compareView">
+        <div className="no-ticket-div d-flex gap-2 align-items-center justify-content-center">
+          <Image width={100} height={100} src={noTickets} alt="" />
+          <h3>NO TICKETS ARE AVAILABLE</h3>
         </div>
       </div>
     );
