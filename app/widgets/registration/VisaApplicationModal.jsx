@@ -44,7 +44,8 @@ export default function VisaApplicationModal({
       return;
     }
 
-    setMessage(result.message || "Visa application submitted successfully.");
+    setMessage("");
+    onHide();
     router.refresh();
   };
 

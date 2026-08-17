@@ -67,12 +67,16 @@ const SelectBox = ({
       textAlign: "left", // force text to start from left
       direction: "ltr", // force option rendering left-to-right
       fontWeight: "normal",
-      backgroundColor: state.isSelected
-        ? "#f8f9fa " // selected
-        : state.isFocused
-          ? "#fff" // hover/focus
-          : "#fff", // normal
-      color: state.isSelected ? "var(--primary-color)" : "#333", // normal text
+      backgroundColor: state.isFocused
+        ? "var(--primary-color)"
+        : state.isSelected
+          ? "#f8f9fa"
+          : "#fff",
+      color: state.isFocused
+        ? "#fff"
+        : state.isSelected
+          ? "var(--primary-color)"
+          : "#333",
       ":active": {
         backgroundColor: "var(--primary-color)",
         color: "#fff",

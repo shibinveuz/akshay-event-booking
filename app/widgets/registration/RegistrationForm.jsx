@@ -913,6 +913,8 @@ export default function RegistrationForm({
                       label="Which industry do you belong to?"
                       value={formData.industry}
                       options={INDUSTRY_OPTIONS}
+                      labelKey="name"
+                      valueKey="code"
                       onChange={handleChange}
                       error={errors.industry}
                       isRequired

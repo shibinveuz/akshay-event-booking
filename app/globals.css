@@ -5034,6 +5034,7 @@ td {
   font-weight: 700;
   color: #333;
   margin-bottom: 8px;
+  text-transform: capitalize;
 }
 
 .welcome-text {
@@ -5314,11 +5315,26 @@ td {
   font-weight: 600;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  min-width: max-content;
+  flex-shrink: 0;
   cursor: pointer;
   transition: all 0.3s ease;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.edit-btn-label {
+  display: inline-block;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.edit-btn svg {
+  flex-shrink: 0;
 }
 
 .edit-btn:hover {

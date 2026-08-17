@@ -315,7 +315,7 @@ export async function updateVisitorProfileAction(fields) {
           jobtitle: fields.jobTitle?.trim(),
           companytype: fields.companyType || "",
           industry: fields.industry || "",
-          investor: fields.investorType || "",
+          visa_required: fields.visaRequired === "yes",
           solutions_products: fields.interestIds || [],
           department: "N/A",
           city: "N/A",

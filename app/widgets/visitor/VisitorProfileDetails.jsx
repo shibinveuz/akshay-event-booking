@@ -9,10 +9,11 @@ import InputField from "@/app/components/form/InputField";
 import SelectField from "@/app/components/form/SelectField/SelectField";
 import PhoneField from "@/app/components/form/PhoneField/PhoneField";
 import InterestSelection from "@/app/widgets/registration/InterestSelection";
+import VisaQuestion from "@/app/widgets/registration/VisaQuestion";
+import VisaApplicationModal from "@/app/widgets/registration/VisaApplicationModal";
 import {
   COMPANY_TYPE_OPTIONS,
   INDUSTRY_OPTIONS,
-  INVESTOR_OPTIONS,
 } from "@/app/widgets/registration/profileOptions";
 
 function createFields(visitor) {
@@ -28,7 +29,7 @@ function createFields(visitor) {
     jobTitle: visitor.jobTitle || "",
     companyType: visitor.companyType || "",
     industry: visitor.industry || "",
-    investorType: visitor.investorType || "",
+    visaRequired: visitor.visaRequested ? "yes" : "no",
     phoneCode: visitor.phoneCode || "",
     phoneCountry: visitor.countryCode || "",
     countryCode: visitor.countryCode || "",
@@ -37,9 +38,16 @@ function createFields(visitor) {
   };
 }
 
-function includeCurrentOption(options, value) {
-  if (!value || options.some((option) => option.value === value)) return options;
-  return [...options, { label: value, value }];
+function includeCurrentOption(
+  options,
+  value,
+  labelKey = "label",
+  valueKey = "value",
+) {
+  if (!value || options.some((option) => option[valueKey] === value)) {
+    return options;
+  }
+  return [...options, { [labelKey]: value, [valueKey]: value }];
 }
 
 export default function VisitorProfileDetails({
@@ -53,18 +61,22 @@ export default function VisitorProfileDetails({
   const [message, setMessage] = useState("");
   const [apiError, setApiError] = useState("");
   const [errors, setErrors] = useState({});
+  const [showVisaModal, setShowVisaModal] = useState(false);
   const [fields, setFields] = useState(() => createFields(visitor));
-  const countryOptions = useMemo(() => mapCountryOptions(countries), [countries]);
+  const countryOptions = useMemo(
+    () => mapCountryOptions(countries),
+    [countries],
+  );
   const companyTypeOptions = includeCurrentOption(
     COMPANY_TYPE_OPTIONS,
     fields.companyType,
   );
-  const industryOptions = includeCurrentOption(INDUSTRY_OPTIONS, fields.industry);
-  const investorOptions = includeCurrentOption(
-    INVESTOR_OPTIONS,
-    fields.investorType,
+  const industryOptions = includeCurrentOption(
+    INDUSTRY_OPTIONS,
+    fields.industry,
+    "name",
+    "code",
   );
-
   const setField = (name, value) => {
     setFields((previous) => ({ ...previous, [name]: value }));
     setErrors((previous) => ({ ...previous, [name]: "" }));
@@ -85,13 +97,20 @@ export default function VisitorProfileDetails({
 
   const validate = () => {
     const nextErrors = {};
-    if (!selectedCountry) nextErrors.countryCode = "Country of residence is required.";
-    if (!selectedNationality) nextErrors.nationalityCode = "Nationality is required.";
+    if (!selectedCountry)
+      nextErrors.countryCode = "Country of residence is required.";
+    if (!selectedNationality)
+      nextErrors.nationalityCode = "Nationality is required.";
     if (!fields.mobile.trim()) nextErrors.mobile = "Mobile number is required.";
-    if (!fields.company.trim()) nextErrors.company = "Company name is required.";
+    if (!fields.company.trim())
+      nextErrors.company = "Company name is required.";
     if (!fields.jobTitle.trim()) nextErrors.jobTitle = "Job title is required.";
-    if (!fields.companyType) nextErrors.companyType = "Company type is required.";
+    if (!fields.companyType)
+      nextErrors.companyType = "Company type is required.";
     if (!fields.industry) nextErrors.industry = "Industry is required.";
+    if (!fields.visaRequired)
+      nextErrors.visaRequired =
+        "Please select whether you require a visa invitation letter.";
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -115,13 +134,6 @@ export default function VisitorProfileDetails({
     router.refresh();
   };
 
-  const handleCancel = () => {
-    setFields(createFields(visitor));
-    setErrors({});
-    setApiError("");
-    onEditingChange(false);
-  };
-
   const detailFields = [
     ["firstName", "First name"],
     ["lastName", "Last name"],
@@ -133,7 +145,6 @@ export default function VisitorProfileDetails({
     ["jobTitle", "Job title"],
     ["companyType", "Company type"],
     ["industry", "Industry"],
-    ["investorType", "Are you an investor?"],
   ];
   const configuredInterestOptions = visitor.interestOptions || [];
   const displayInterestOptions = (visitor.interests || []).map(
@@ -163,20 +174,25 @@ export default function VisitorProfileDetails({
             onClick={() => {
               setMessage("");
               setFields(createFields(visitor));
+              setShowVisaModal(false);
               onEditingChange(true);
             }}
           >
-            <Pencil size={16} /> Edit
+            <Pencil size={16} aria-hidden="true" />
+            <span className="edit-btn-label">Edit</span>
           </button>
         ) : (
-          <div className="d-flex gap-2">
-            <button type="button" className="edit-btn" onClick={handleSave} disabled={saving}>
-              <Save size={16} /> {saving ? "Saving..." : "Save"}
-            </button>
-            <button type="button" className="edit-btn" onClick={handleCancel} disabled={saving}>
-              <X size={16} /> Cancel
-            </button>
-          </div>
+          <button
+            type="button"
+            className="edit-btn"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            <Save size={16} aria-hidden="true" />
+            <span className="edit-btn-label">
+              {saving ? "Saving..." : "Save"}
+            </span>
+          </button>
         )}
       </div>
 
@@ -195,9 +211,22 @@ export default function VisitorProfileDetails({
           ))}
         </div>
       ) : (
-        <div className="details-grid">
-          <InputField id="visitorFirstName" label="First Name" value={fields.firstName} disabled required />
-          <InputField id="visitorLastName" label="Last Name" value={fields.lastName} disabled required />
+        <>
+          <div className="details-grid">
+          <InputField
+            id="visitorFirstName"
+            label="First Name"
+            value={fields.firstName}
+            disabled
+            required
+          />
+          <InputField
+            id="visitorLastName"
+            label="Last Name"
+            value={fields.lastName}
+            disabled
+            required
+          />
           <SelectField
             id="visitorCountry"
             name="countryCode"
@@ -226,15 +255,77 @@ export default function VisitorProfileDetails({
             error={errors.nationalityCode}
             isRequired
           />
-          <InputField id="visitorEmail" type="email" label="Email Address" value={fields.email} disabled required />
-          <InputField id="visitorConfirmEmail" type="email" label="Confirm Email Address" value={fields.confirmEmail} disabled required />
-          <PhoneField fields={fields} setField={setField} error={errors.mobile} countriesList={countryOptions} />
-          <InputField id="visitorJobTitle" label="Job Title" value={fields.jobTitle} onChange={(event) => setField("jobTitle", event.target.value)} error={errors.jobTitle} required />
-          <InputField id="visitorCompany" label="Company Name" value={fields.company} onChange={(event) => setField("company", event.target.value)} error={errors.company} required />
-          <SelectField id="visitorCompanyType" name="companyType" label="Company Type" value={fields.companyType} options={companyTypeOptions} onChange={(event) => setField("companyType", event.target.value)} error={errors.companyType} isRequired />
-          <SelectField id="visitorIndustry" name="industry" label="Which industry do you belong to?" value={fields.industry} options={industryOptions} onChange={(event) => setField("industry", event.target.value)} error={errors.industry} isRequired />
-          <SelectField id="visitorInvestor" name="investorType" label="Are you an investor?" value={fields.investorType} options={investorOptions} onChange={(event) => setField("investorType", event.target.value)} />
-        </div>
+          <InputField
+            id="visitorEmail"
+            type="email"
+            label="Email Address"
+            value={fields.email}
+            disabled
+            required
+          />
+          <InputField
+            id="visitorConfirmEmail"
+            type="email"
+            label="Confirm Email Address"
+            value={fields.confirmEmail}
+            disabled
+            required
+          />
+          <PhoneField
+            fields={fields}
+            setField={setField}
+            error={errors.mobile}
+            countriesList={countryOptions}
+          />
+          <InputField
+            id="visitorJobTitle"
+            label="Job Title"
+            value={fields.jobTitle}
+            onChange={(event) => setField("jobTitle", event.target.value)}
+            error={errors.jobTitle}
+            required
+          />
+          <InputField
+            id="visitorCompany"
+            label="Company Name"
+            value={fields.company}
+            onChange={(event) => setField("company", event.target.value)}
+            error={errors.company}
+            required
+          />
+          <SelectField
+            id="visitorCompanyType"
+            name="companyType"
+            label="Company Type"
+            value={fields.companyType}
+            options={companyTypeOptions}
+            onChange={(event) => setField("companyType", event.target.value)}
+            error={errors.companyType}
+            isRequired
+          />
+          <SelectField
+            id="visitorIndustry"
+            name="industry"
+            label="Which industry do you belong to?"
+            value={fields.industry}
+            options={industryOptions}
+            labelKey="name"
+            valueKey="code"
+            onChange={(event) => setField("industry", event.target.value)}
+            error={errors.industry}
+            isRequired
+          />
+          </div>
+
+          <VisaQuestion
+            value={fields.visaRequired}
+            error={errors.visaRequired}
+            onChange={(value) => {
+              setField("visaRequired", value);
+              setShowVisaModal(value === "yes");
+            }}
+          />
+        </>
       )}
 
       {interestOptions.length > 0 && (
@@ -246,6 +337,15 @@ export default function VisitorProfileDetails({
           required={false}
         />
       )}
+
+      <VisaApplicationModal
+        show={showVisaModal}
+        onHide={() => setShowVisaModal(false)}
+        countries={countries}
+        registrationId={visitor.uid || visitor.id}
+        initialValues={visitor.visaForm}
+        accessContext="visitor"
+      />
     </div>
   );
 }
