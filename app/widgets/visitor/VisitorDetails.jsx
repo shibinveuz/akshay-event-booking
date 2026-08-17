@@ -1,9 +1,14 @@
+"use client";
+
+import { useState } from "react";
 import BadgeInstructions from "./BadgeInstructions";
 import VisitorBadgePreview from "./VisitorBadgePreview";
 import VisitorEventInfo from "./VisitorEventInfo";
 import VisitorProfileDetails from "./VisitorProfileDetails";
 
-export default function VisitorDetails({ visitor }) {
+export default function VisitorDetails({ visitor, countries = [] }) {
+  const [editingProfile, setEditingProfile] = useState(false);
+
   return (
     <div className="tab-content" id="visitor">
       <div className="content-area">
@@ -21,13 +26,22 @@ export default function VisitorDetails({ visitor }) {
           <div className="event-info-grid">
             <VisitorBadgePreview visitor={visitor} />
 
-            <VisitorEventInfo visitor={visitor} />
+            <VisitorEventInfo
+              visitor={visitor}
+              countries={countries}
+              onUpdateRegistration={() => setEditingProfile(true)}
+            />
           </div>
         </div>
 
         <BadgeInstructions />
 
-        <VisitorProfileDetails visitor={visitor} />
+        <VisitorProfileDetails
+          visitor={visitor}
+          countries={countries}
+          editing={editingProfile}
+          onEditingChange={setEditingProfile}
+        />
       </div>
     </div>
   );

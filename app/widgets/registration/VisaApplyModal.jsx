@@ -2,6 +2,7 @@
 
 import InputField from "@/app/components/form/InputField";
 import SelectField from "@/app/components/form/SelectField/SelectField";
+import { mapCountryOptions } from "@/app/lib/countries";
 
 export default function VisaApplyModal({
   show,
@@ -12,12 +13,10 @@ export default function VisaApplyModal({
   countries = [],
   onSubmit,
   isLoading = false,
+  error = "",
+  message = "",
 }) {
-  const countryOptions = countries.map((country) => ({
-    label: country.label || country.name || country.country_name || "",
-    value:
-      country.value || country.code || country.country_code || country.id || "",
-  }));
+  const countryOptions = mapCountryOptions(countries);
 
   const dayOptions = Array.from({ length: 31 }, (_, i) => {
     const val = String(i + 1).padStart(2, "0");
@@ -65,6 +64,16 @@ export default function VisaApplyModal({
                   onSubmit();
                 }}
               >
+                {error && (
+                  <div className="alert alert-danger" role="alert">
+                    {error}
+                  </div>
+                )}
+                {message && (
+                  <div className="alert alert-success" role="status">
+                    {message}
+                  </div>
+                )}
                 <div className="row">
                   <div className="col-xl-6 col-md-12 mt-40">
                     <InputField

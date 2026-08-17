@@ -1,7 +1,6 @@
-import React, { useId, useState, useEffect } from "react";
+import React, { useId, useState } from "react";
 import Select, { components } from "react-select";
 import "./SelectField.css";
-import { useTranslation } from "react-i18next";
 const SelectBox = ({
   isRequired,
   label,
@@ -16,24 +15,16 @@ const SelectBox = ({
 }) => {
   const generatedId = useId();
   const selectInstanceId = `select-${generatedId.replace(/:/g, "")}`;
-  const [hasValue, setHasValue] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [viewportWidth, setViewportWidth] = useState(1280);
-  const { i18n } = useTranslation();
-  const dir = i18n?.language?.includes("ar") ? "rtl" : "ltr";
-  useEffect(() => {
-    setHasValue(value && (Array.isArray(value) ? value.length > 0 : true));
-  }, [value]);
-
-  useEffect(() => {
-    setViewportWidth(window.innerWidth);
-  }, []);
+  const [viewportWidth] = useState(() =>
+    typeof window === "undefined" ? 1280 : window.innerWidth,
+  );
+  const hasValue = Boolean(
+    value && (Array.isArray(value) ? value.length > 0 : true),
+  );
+  const dir = "ltr";
 
   const handleChange = (selectedOption) => {
-    setHasValue(
-      selectedOption &&
-        (Array.isArray(selectedOption) ? selectedOption.length > 0 : true),
-    );
     if (onChange) {
       const event = {
         target: {

@@ -41,8 +41,12 @@ export default function PhoneField({
         >
           <CountryCodeDropdown
             value={phoneCode}
-            onChange={(code) => updateField("phoneCode", code)}
+            onChange={(code, countryCode) => {
+              updateField("phoneCode", code);
+              updateField("phoneCountry", countryCode);
+            }}
             countriesList={countriesList}
+            selectedCountryCode={fields?.phoneCountry}
           />
 
           <input

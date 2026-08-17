@@ -1,49 +1,60 @@
 import Registration from "@/app/widgets/registration/Registration";
+import { getCountries } from "@/app/lib/api/registration";
+import { getPrimaryFreeTicketConfiguration } from "@/app/lib/api/tickets";
+import { mapCountryOptions } from "@/app/lib/countries";
 
 export const metadata = {
   title: "Registration | GITEX NIGERIA 2026",
   description: "Complete your registration for GITEX Nigeria 2026.",
 };
 
-const countries = [
-  {
-    value: "NG",
-    label: "Nigeria",
-    phoneCode: "+234",
-  },
-  {
-    value: "IN",
-    label: "India",
-    phoneCode: "+91",
-  },
-  {
-    value: "AE",
-    label: "United Arab Emirates",
-    phoneCode: "+971",
-  },
-  {
-    value: "GB",
-    label: "United Kingdom",
-    phoneCode: "+44",
-  },
-  {
-    value: "US",
-    label: "United States",
-    phoneCode: "+1",
-  },
-];
+export const dynamic = "force-dynamic";
 
-const selectedTicket = {
-  id: 1,
-  name: "TEST1",
-  category: "VISITOR",
-  price: 0,
-  oldPrice: 0,
-  currency: "NGN",
-  vat: "Incl. 7.5% VAT",
-  className: "ticket-bg-green",
-};
+export default async function RegistrationPage() {
+  const [countriesApiData, ticketConfiguration] = await Promise.all([
+    getCountries().catch(() => []),
+    getPrimaryFreeTicketConfiguration().catch(() => null),
+  ]);
 
-export default function RegistrationPage() {
-  return <Registration countries={countries} selectedTicket={selectedTicket} />;
+  const availability = ticketConfiguration?.availability || null;
+  const availableTicket = ticketConfiguration?.ticket || null;
+
+  // Map API ticket to frontend widget format
+  const mappedSelectedTicket = availableTicket
+    ? {
+        id: availableTicket.id,
+        encryptedId: availableTicket.ticket_encrypted_id || "",
+        documentRequired: Boolean(availableTicket.document_required),
+        name:
+          availableTicket.display_ticket_name ||
+          availableTicket.ticket_name ||
+          "Ticket",
+        category: availableTicket.category_type_name || "VISITOR",
+        price: availableTicket.is_free ? "FREE" : availableTicket.price_amount,
+        priceAmount: Number(availableTicket.price_amount || 0),
+        oldPrice: availableTicket.actual_price || 0,
+        currency: availability?.current_currency || "NGN",
+        vat: "Incl. 7.5% VAT",
+        className:
+          availableTicket.class_name ||
+          (availableTicket.is_free ? "ticket-bg-green" : ""),
+      }
+    : null;
+
+  const productsContainer = availability?.product_and_services;
+  const interestOptions = Array.isArray(productsContainer)
+    ? productsContainer
+    : productsContainer?.[availableTicket?.id] || [];
+
+  const mappedCountries = mapCountryOptions(countriesApiData, {
+    requirePhoneCode: true,
+  });
+
+  return (
+    <Registration
+      countries={mappedCountries}
+      selectedTicket={mappedSelectedTicket}
+      interestOptions={interestOptions}
+    />
+  );
 }

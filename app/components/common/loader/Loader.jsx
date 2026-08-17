@@ -2,6 +2,7 @@
 
 import React, { useEffect, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import Image from "next/image";
 
 // Fallbacks for the referrer functions if they don't exist
 const getReferrerSource = () => {
@@ -19,6 +20,41 @@ const getReferrerMedium = () => {
 
 const loaderImg = "/assets/img/loader.gif";
 
+function captureUtm() {
+  if (typeof window === "undefined" || sessionStorage.getItem("first_visit")) {
+    return;
+  }
+
+  sessionStorage.setItem("first_visit", new Date().toISOString());
+  const params = new URLSearchParams(window.location.search);
+  const utmParams = [
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_content",
+    "utm_term",
+    "utm_id",
+  ];
+
+  utmParams.forEach((param) => {
+    let value = "";
+    if (param === "utm_source") {
+      value =
+        params.get(param) ||
+        sessionStorage.getItem(param) ||
+        getReferrerSource();
+    } else if (param === "utm_medium") {
+      value =
+        params.get(param) ||
+        sessionStorage.getItem(param) ||
+        getReferrerMedium();
+    } else {
+      value = params.get(param) || sessionStorage.getItem(param) || "";
+    }
+    if (value) sessionStorage.setItem(param, value);
+  });
+}
+
 const LoaderContent = () => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -31,7 +67,7 @@ const LoaderContent = () => {
     }
     document.body.style.overflow = "hidden"; // Prevent scrolling
 
-    fetchUtm();
+    captureUtm();
 
     // Hide loader after a short delay to allow the new page to render
     const timer = setTimeout(() => {
@@ -51,44 +87,9 @@ const LoaderContent = () => {
     };
   }, [pathname, searchParams]);
 
-  const fetchUtm = async () => {
-    if (typeof window === "undefined") return;
-    if (!sessionStorage.getItem("first_visit")) {
-      sessionStorage.setItem("first_visit", new Date().toISOString());
-      const params = new URLSearchParams(window.location.search);
-      const utmParams = [
-        "utm_source",
-        "utm_medium",
-        "utm_campaign",
-        "utm_content",
-        "utm_term",
-        "utm_id",
-      ];
-      utmParams.forEach((param) => {
-        let value = "";
-        if (param === "utm_source") {
-          value =
-            params.get(param) ||
-            sessionStorage.getItem(param) ||
-            getReferrerSource();
-        } else if (param === "utm_medium") {
-          value =
-            params.get(param) ||
-            sessionStorage.getItem(param) ||
-            getReferrerMedium();
-        } else {
-          value = params.get(param) || sessionStorage.getItem(param) || "";
-        }
-        if (value) {
-          sessionStorage.setItem(param, value);
-        }
-      });
-    }
-  };
-
   return (
     <div className="main-loader" id="initial-loader">
-      <img src={loaderImg} alt="Loading..." />
+      <Image src={loaderImg} width={96} height={96} alt="Loading..." unoptimized />
     </div>
   );
 };

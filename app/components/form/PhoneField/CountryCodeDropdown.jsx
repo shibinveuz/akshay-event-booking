@@ -3,31 +3,36 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import Image from "next/image";
-import countries from "@/app/data/countries";
 import styles from "./PhoneField.module.css";
 
 export default function CountryCodeDropdown({
   value,
   onChange,
   countriesList,
+  selectedCountryCode,
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef(null);
   const searchRef = useRef(null);
 
-  const activeList =
-    Array.isArray(countriesList) && countriesList.length > 0
-      ? countriesList
-      : countries;
+  const activeList = Array.isArray(countriesList) ? countriesList : [];
 
   const cleanVal = String(value || "").replace(/^\+/, "");
+  const getCountryCode = (country) =>
+    String(country?.code || country?.value || country?.country_code || "");
   const selected =
     activeList.find(
-      (c) =>
-        String(c.phoneCode) === cleanVal || String(c.phone_code) === cleanVal,
+      (country) =>
+        getCountryCode(country).toUpperCase() ===
+        String(selectedCountryCode || "").toUpperCase(),
     ) ||
-    activeList.find((c) => c.code === "NG") ||
+    activeList.find(
+      (c) =>
+        String(c.phoneCode || "").replace(/^\+/, "") === cleanVal ||
+        String(c.phone_code || "").replace(/^\+/, "") === cleanVal,
+    ) ||
+    activeList.find((c) => getCountryCode(c) === "NG") ||
     activeList[0];
 
   useEffect(() => {
@@ -43,7 +48,7 @@ export default function CountryCodeDropdown({
 
   function handleSelect(country) {
     const code = country.phoneCode || country.phone_code || "234";
-    onChange(String(code).replace(/^\+/, ""));
+    onChange(String(code).replace(/^\+/, ""), getCountryCode(country));
     setOpen(false);
     setSearch("");
   }
@@ -51,11 +56,13 @@ export default function CountryCodeDropdown({
   const selectedCode = String(
     selected?.phoneCode || selected?.phone_code || "234",
   ).replace(/^\+/, "");
-  const selectedFlag = (selected?.code || "ng").toLowerCase();
+  const selectedFlag = (getCountryCode(selected) || "ng").toLowerCase();
   const normalizedSearch = search.trim().toLocaleLowerCase();
   const filteredList = activeList.filter((country) => {
-    const name = String(country.name || "").toLocaleLowerCase();
-    const code = String(country.code || "").toLocaleLowerCase();
+    const name = String(
+      country.name || country.label || country.country_name || "",
+    ).toLocaleLowerCase();
+    const code = getCountryCode(country).toLocaleLowerCase();
     const dialCode = String(
       country.phoneCode || country.phone_code || "",
     ).toLocaleLowerCase();
@@ -121,11 +128,14 @@ export default function CountryCodeDropdown({
               const pCode = String(
                 country.phoneCode || country.phone_code || "",
               ).replace(/^\+/, "");
-              const isSelected = country.code === selected?.code;
-              const flagCode = (country.code || "ng").toLowerCase();
+              const countryCode = getCountryCode(country);
+              const isSelected = countryCode === getCountryCode(selected);
+              const flagCode = (countryCode || "ng").toLowerCase();
+              const countryName =
+                country.name || country.label || country.country_name || countryCode;
               return (
                 <li
-                  key={country.id || `${country.code}-${idx}`}
+                  key={country.id || `${countryCode}-${idx}`}
                   role="option"
                   aria-selected={isSelected}
                   className={`${styles.option}${isSelected ? ` ${styles.optionSelected}` : ""}`}
@@ -139,7 +149,7 @@ export default function CountryCodeDropdown({
                     height={16}
                     unoptimized
                   />
-                  <span className={styles.optionName}>{country.name}</span>
+                  <span className={styles.optionName}>{countryName}</span>
                   <span className={styles.optionCode}>+{pCode}</span>
                 </li>
               );

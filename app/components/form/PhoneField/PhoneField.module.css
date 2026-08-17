@@ -23,6 +23,13 @@ margin-bottom: 1.5rem;
   border-color: #000;
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
 }
+.phoneInputWrapper.error {
+  border-color: #dc3545;
+}
+.phoneInputWrapper.error:focus-within {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.1);
+}
 .phoneInput {
   width: 100%;
   min-width: 0;

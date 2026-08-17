@@ -7,7 +7,7 @@ import VisitorHeader from "./VisitorHeader";
 import VisitorDetails from "./VisitorDetails";
 import UserHistory from "./UserHistory";
 
-export default function VisitorPortalClient({ visitor, history }) {
+export default function VisitorPortalClient({ visitor, history, countries = [] }) {
   const [activeTab, setActiveTab] = useState("visitor");
 
   return (
@@ -17,7 +17,9 @@ export default function VisitorPortalClient({ visitor, history }) {
       <div className="main-dashboard">
         <VisitorHeader visitor={visitor} />
 
-        {activeTab === "visitor" && <VisitorDetails visitor={visitor} />}
+        {activeTab === "visitor" && (
+          <VisitorDetails visitor={visitor} countries={countries} />
+        )}
 
         {activeTab === "user-history" && <UserHistory history={history} />}
       </div>

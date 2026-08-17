@@ -2,20 +2,96 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Upload, X } from "lucide-react";
 
-import InterestSelection from "./InterestSelection";
+import InterestSelection, {
+  getRequiredInterestCount,
+} from "./InterestSelection";
 import TermsSection from "./TermsSection";
 import SelectedPass from "./SelectedPass";
 import PromoCode from "./PromoCode";
 import BadgePreview from "./BadgePreview";
 import RegistrationMessageModal from "./RegistrationMessageModal";
 
+import {
+  submitRegistrationAction,
+  checkEmailAction,
+  validatePromoCodeAction,
+} from "@/app/lib/api/registration";
 import PhoneField from "@/app/components/form/PhoneField/PhoneField";
 import InputField from "@/app/components/form/InputField";
 import SelectField from "@/app/components/form/SelectField/SelectField";
 import VisaApplyModal from "./VisaApplyModal";
+import VisaQuestion from "./VisaQuestion";
+import { isVisaFormComplete, useVisaForm } from "./useVisaForm";
+import {
+  COMPANY_TYPE_OPTIONS,
+  INDUSTRY_OPTIONS,
+} from "./profileOptions";
 
 const REMINDER_TIME = 30 * 60 * 1000;
+const RECAPTCHA_SCRIPT_ID = "registration-recaptcha-v3";
+function getDialCode(country) {
+  return String(
+    country?.phoneCode ||
+      country?.phone_code ||
+      country?.dialCode ||
+      country?.dial_code ||
+      country?.callingCode ||
+      country?.calling_code ||
+      "",
+  ).replace(/^\+/, "");
+}
+
+function getConfirmationId(result) {
+  const candidates = [result?.confirmationId];
+
+  return candidates.find(
+    (candidate) => typeof candidate === "string" && candidate.trim(),
+  );
+}
+
+function executeRecaptcha(siteKey) {
+  if (!siteKey) {
+    return Promise.reject(
+      new Error("Registration security verification is not configured."),
+    );
+  }
+
+  const run = () =>
+    new Promise((resolve, reject) => {
+      window.grecaptcha.ready(() => {
+        window.grecaptcha
+          .execute(siteKey, { action: "registration" })
+          .then(resolve, reject);
+      });
+    });
+
+  if (window.grecaptcha?.execute) {
+    return run();
+  }
+
+  return new Promise((resolve, reject) => {
+    const existingScript = document.getElementById(RECAPTCHA_SCRIPT_ID);
+    const script = existingScript || document.createElement("script");
+    const handleLoad = () => run().then(resolve, reject);
+
+    script.addEventListener("load", handleLoad, { once: true });
+    script.addEventListener(
+      "error",
+      () => reject(new Error("Security verification could not be loaded.")),
+      { once: true },
+    );
+
+    if (!existingScript) {
+      script.id = RECAPTCHA_SCRIPT_ID;
+      script.src = `https://www.recaptcha.net/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`;
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+  });
+}
 
 const initialFormData = {
   firstName: "",
@@ -26,7 +102,10 @@ const initialFormData = {
   confirmemail: "",
   mobile: "",
   phoneCode: "234",
+  phoneCountry: "NG",
   company: "",
+  companyType: "",
+  industry: "",
   jobTitle: "",
 
   interests: [],
@@ -38,18 +117,39 @@ const initialFormData = {
   promoCode: "",
 
   visa_required: "",
+
+  registrationId: "", // Store registration ID for abandoned flow
 };
 
-export default function RegistrationForm({ countries = [], selectedTicket }) {
+export default function RegistrationForm({
+  countries = [],
+  selectedTicket,
+  interestOptions = [],
+}) {
   const router = useRouter();
 
   const [formData, setFormData] = useState(initialFormData);
+  const [documentFile, setDocumentFile] = useState(null);
 
   const [errors, setErrors] = useState({});
 
   const [submitting, setSubmitting] = useState(false);
+  const [couponData, setCouponData] = useState({});
+  const [promoState, setPromoState] = useState({
+    loading: false,
+    message: "",
+    success: false,
+  });
+
+  // Email Validation State
+  const [emailStatus, setEmailStatus] = useState("idle"); // idle, validating, error, success
+  const [emailErrorMessage, setEmailErrorMessage] = useState("");
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  const [confirmationId, setConfirmationId] = useState("");
+
+  const [confirmationToken, setConfirmationToken] = useState("");
 
   const [showReminderModal, setShowReminderModal] = useState(false);
 
@@ -57,50 +157,17 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
 
   const reminderTimerRef = useRef(null);
 
-  const [visaRequired, setVisaRequired] = useState("");
   const [showVisaModal, setShowVisaModal] = useState(false);
 
-  const [visaForm, setVisaForm] = useState({
-    passport_fullname: "",
-    visa_dob: {
-      dd: "",
-      mm: "",
-      yyyy: "",
-    },
-    passport_number: "",
-    passport_expiry_date: {
-      dd: "",
-      mm: "",
-      yyyy: "",
-    },
-    passport_nationality: "",
-    passport_country: "",
-  });
-
-  const setVisaField = (name, value) => {
-    setVisaForm((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
-  };
-
-  const setVisaDateField = (group, field, value) => {
-    setVisaForm((previous) => ({
-      ...previous,
-      [group]: {
-        ...previous[group],
-        [field]: value,
-      },
-    }));
-  };
+  const { visaForm, setVisaField, setVisaDateField } = useVisaForm();
 
   const HOSTING_COUNTRY = process.env.NEXT_PUBLIC_HOSTING_COUNTRY || "NG";
 
-  const showVisaQuestion =
-    formData.countryofresidence &&
-    formData.nationality &&
-    formData.countryofresidence !== HOSTING_COUNTRY &&
-    formData.nationality !== HOSTING_COUNTRY;
+  // const showVisaQuestion =
+  //   formData.countryofresidence &&
+  //   formData.nationality &&
+  //   formData.countryofresidence !== HOSTING_COUNTRY &&
+  //   formData.nationality !== HOSTING_COUNTRY;
 
   /*
    * ----------------------------------------------------
@@ -142,11 +209,7 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
    * ----------------------------------------------------
    */
 
-  const phoneCode =
-    formData.phoneCode ||
-    selectedCountry?.phoneCode ||
-    selectedCountry?.phone_code ||
-    "234";
+  const phoneCode = formData.phoneCode || getDialCode(selectedCountry) || "234";
 
   /*
    * ----------------------------------------------------
@@ -176,6 +239,17 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
     const { name, value } = event.target;
 
     setField(name, value);
+
+    if (name === "promoCode") {
+      setCouponData({});
+      setPromoState({ loading: false, message: "", success: false });
+    }
+
+    // Reset email validation status if user types a new email
+    if (name === "email" && emailStatus !== "idle") {
+      setEmailStatus("idle");
+      setEmailErrorMessage("");
+    }
   };
 
   /*
@@ -196,23 +270,23 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
    * ----------------------------------------------------
    */
 
-  const handleCountryChange = (event) => {
+  const handleCountryChange = (event, selectedOption) => {
     const { value } = event.target;
 
-    const country = countryOptions.find(
-      (item) => String(item.value) === String(value),
-    );
+    const country =
+      selectedOption ||
+      countryOptions.find((item) => String(item.value) === String(value));
 
-    const newPhoneCode = String(
-      country?.phoneCode || country?.phone_code || "234",
-    ).replace(/^\+/, "");
+    const newPhoneCode = getDialCode(country);
 
     setFormData((previous) => ({
       ...previous,
 
       countryofresidence: value,
 
-      phoneCode: newPhoneCode,
+      phoneCode: newPhoneCode || previous.phoneCode,
+
+      phoneCountry: value,
     }));
 
     setErrors((previous) => ({
@@ -252,6 +326,10 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
       validationErrors.email = "Email address is required.";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
       validationErrors.email = "Please enter a valid email address.";
+    } else if (emailStatus === "error") {
+      validationErrors.email = emailErrorMessage;
+    } else if (emailStatus === "validating") {
+      validationErrors.email = "Please wait while we validate your email.";
     }
 
     if (!formData.confirmemail.trim()) {
@@ -271,12 +349,26 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
       validationErrors.company = "Company name is required.";
     }
 
+    if (!formData.companyType) {
+      validationErrors.companyType = "Company type is required.";
+    }
+
+    if (!formData.industry) {
+      validationErrors.industry = "Industry is required.";
+    }
+
     if (!formData.jobTitle.trim()) {
       validationErrors.jobTitle = "Job title is required.";
     }
 
-    if (formData.interests.length < 3) {
-      validationErrors.interests = "Please select at least 3 interests.";
+    const requiredInterestCount = getRequiredInterestCount(interestOptions);
+    if (formData.interests.length < requiredInterestCount) {
+      validationErrors.interests = `Please select at least ${requiredInterestCount} interest${requiredInterestCount === 1 ? "" : "s"}.`;
+    }
+
+    if (selectedTicket?.documentRequired && !documentFile) {
+      validationErrors.userDocument =
+        "A supporting document is required for this pass.";
     }
 
     if (!formData.terms) {
@@ -287,12 +379,102 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
       validationErrors.ageConfirm = "Age confirmation is required.";
     }
 
-    if (showVisaQuestion && !formData.visa_required) {
-      validationErrors.visa_required =
-        "Please select whether you require a visa invitation letter.";
+    // if (showVisaQuestion && !formData.visa_required) {
+    //   validationErrors.visa_required =
+    //     "Please select whether you require a visa invitation letter.";
+    // }
+
+    if (formData.visa_required === "yes") {
+      if (!isVisaFormComplete(visaForm)) {
+        validationErrors.visa_required =
+          "Complete your visa invitation letter details.";
+      }
     }
 
     return validationErrors;
+  };
+
+  const handleDocumentChange = (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!["image/jpeg", "image/png"].includes(file.type)) {
+      setErrors((previous) => ({
+        ...previous,
+        userDocument: "Please upload a JPEG or PNG image.",
+      }));
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors((previous) => ({
+        ...previous,
+        userDocument: "The supporting document must be 5 MB or smaller.",
+      }));
+      event.target.value = "";
+      return;
+    }
+
+    setDocumentFile(file);
+    setErrors((previous) => ({ ...previous, userDocument: "" }));
+  };
+
+  /*
+   * ----------------------------------------------------
+   * EMAIL VALIDATION ON BLUR
+   * ----------------------------------------------------
+   */
+
+  const handleEmailBlur = async () => {
+    const email = formData.email.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return; // Wait for a valid format before checking
+    }
+
+    setEmailStatus("validating");
+    setEmailErrorMessage("");
+
+    try {
+      const result = await checkEmailAction(email, selectedTicket?.id);
+
+      if (!result.success && result.error) {
+        // Silently fail if API is not available to avoid blocking development
+        console.warn(
+          "Email validation check failed (endpoint might not exist).",
+        );
+        setEmailStatus("idle");
+        return;
+      }
+
+      if (result.isCompleted) {
+        setEmailStatus("error");
+        setEmailErrorMessage(
+          result.message ||
+            "This email address is already registered. Please use a different email address or log in to your existing account.",
+        );
+      } else if (result.isAbandoned) {
+        setEmailStatus("success");
+        // Automatically populate available fields
+        const abandonedData = result.data || {};
+
+        setFormData((prev) => ({
+          ...prev,
+          firstName: abandonedData.firstName || prev.firstName,
+          lastName: abandonedData.lastName || prev.lastName,
+          registrationId: abandonedData.registrationId || "",
+          // Add more fields here if provided safely by the backend
+        }));
+      } else {
+        setEmailStatus("success");
+      }
+    } catch (error) {
+      console.error("Email validation error:", error);
+      setEmailStatus("idle"); // reset on error so they aren't blocked
+    }
   };
 
   /*
@@ -328,6 +510,13 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
 
     const cleanPhoneCode = String(phoneCode).replace(/^\+/, "");
 
+    const country = countryOptions.find(
+      (item) => String(item.value) === String(formData.countryofresidence),
+    );
+    const nationality = countryOptions.find(
+      (item) => String(item.value) === String(formData.nationality),
+    );
+
     const payload = {
       ...formData,
 
@@ -338,28 +527,65 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
       mobileFull: `+${cleanPhoneCode}${cleanMobile}`,
 
       ticketId: selectedTicket?.id ?? null,
+
+      ticketEncryptedId: selectedTicket?.encryptedId || "",
+
+      badgeCategory: selectedTicket?.category || "VISITOR",
+
+      documentRequired: Boolean(selectedTicket?.documentRequired),
+
+      currency: selectedTicket?.currency || "NGN",
+
+      countryName: country?.label || formData.countryofresidence,
+
+      nationalityName: nationality?.label || formData.nationality,
+
+      visaForm,
+
+      registrationId: formData.registrationId || undefined,
+
+      couponData,
     };
 
     try {
       setSubmitting(true);
 
-      console.log("Registration payload:", payload);
+      const recaptchaToken = await executeRecaptcha(
+        process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY,
+      );
 
-      /*
-       * ==================================================
-       * REAL API / SERVER ACTION WILL GO HERE
-       * ==================================================
-       *
-       * const result =
-       *   await submitRegistrationAction(payload);
-       *
-       * if (!result?.success) {
-       *   throw new Error(
-       *     result?.message ||
-       *     "Registration failed."
-       *   );
-       * }
-       */
+      const submission = new FormData();
+      submission.append(
+        "payload",
+        JSON.stringify({ ...payload, recaptchaToken }),
+      );
+      if (documentFile) {
+        submission.append("userDocument", documentFile);
+      }
+
+      const result = await submitRegistrationAction(submission);
+
+      if (!result?.success) {
+        setErrors((previous) => ({
+          ...previous,
+          submit: result?.message || "Registration failed.",
+        }));
+        return;
+      }
+
+      const nextConfirmationId = getConfirmationId(result);
+
+      if (!nextConfirmationId) {
+        setErrors((previous) => ({
+          ...previous,
+          submit:
+            "Registration succeeded, but the confirmation reference was not returned.",
+        }));
+        return;
+      }
+
+      setConfirmationId(nextConfirmationId);
+      setConfirmationToken(result.confirmationToken || "");
 
       /*
        * Registration success
@@ -385,8 +611,6 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
        */
       setShowSuccessModal(true);
     } catch (error) {
-      console.error("Registration failed:", error);
-
       setErrors((previous) => ({
         ...previous,
 
@@ -398,14 +622,15 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
   };
 
   const handleVisaSubmit = () => {
-    console.log("Visa application:", visaForm);
+    if (!isVisaFormComplete(visaForm)) {
+      setErrors((previous) => ({
+        ...previous,
+        visa_required: "Complete all visa invitation letter fields.",
+      }));
+      return;
+    }
 
-    /*
-     * Later:
-     *
-     * const result = await submitVisaApplicationAction(visaForm);
-     */
-
+    setErrors((previous) => ({ ...previous, visa_required: "" }));
     setShowVisaModal(false);
   };
 
@@ -415,8 +640,34 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
    * ----------------------------------------------------
    */
 
-  const handlePromoValidate = () => {
-    console.log("Validate promo:", formData.promoCode);
+  const handlePromoValidate = async () => {
+    if (promoState.loading) return;
+
+    setPromoState({ loading: true, message: "", success: false });
+    const result = await validatePromoCodeAction({
+      couponCode: formData.promoCode,
+      email: formData.email,
+      ticketId: selectedTicket?.id,
+      price: selectedTicket?.priceAmount,
+      currency: selectedTicket?.currency,
+    });
+
+    if (result?.success) {
+      setCouponData(result.couponData || {});
+      setPromoState({
+        loading: false,
+        message: result.message || "Promo code applied.",
+        success: true,
+      });
+      return;
+    }
+
+    setCouponData({});
+    setPromoState({
+      loading: false,
+      message: result?.message || "Invalid promo code.",
+      success: false,
+    });
   };
 
   /*
@@ -428,7 +679,13 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
   const handleSuccessConfirm = () => {
     setShowSuccessModal(false);
 
-    router.push("/confirmation");
+    const params = new URLSearchParams({ id: confirmationId });
+
+    if (confirmationToken) {
+      params.set("token", confirmationToken);
+    }
+
+    router.push(`/confirmation?${params.toString()}`);
   };
 
   /*
@@ -560,11 +817,19 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
                       label="Email Address"
                       value={formData.email}
                       onChange={handleChange}
-                      error={errors.email}
+                      onBlur={handleEmailBlur}
+                      error={
+                        errors.email ||
+                        (emailStatus === "error" ? emailErrorMessage : "")
+                      }
                       autoComplete="email"
-                      onCopy={(event) => event.preventDefault()}
                       required
                     />
+                    {emailStatus === "validating" && (
+                      <small className="text-muted d-block mt-1">
+                        Validating email...
+                      </small>
+                    )}
                   </div>
 
                   {/* CONFIRM EMAIL */}
@@ -578,8 +843,7 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
                       value={formData.confirmemail}
                       onChange={handleChange}
                       error={errors.confirmemail}
-                      autoComplete="off"
-                      onPaste={(event) => event.preventDefault()}
+                      autoComplete="email"
                       required
                     />
                   </div>
@@ -592,6 +856,21 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
                       setField={setField}
                       error={errors.mobile}
                       countriesList={countries}
+                    />
+                  </div>
+
+                  {/* JOB TITLE */}
+
+                  <div className="col-md-6">
+                    <InputField
+                      id="jobTitle"
+                      name="jobTitle"
+                      label="Job Title"
+                      value={formData.jobTitle}
+                      onChange={handleChange}
+                      error={errors.jobTitle}
+                      autoComplete="organization-title"
+                      required
                     />
                   </div>
 
@@ -610,18 +889,33 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
                     />
                   </div>
 
-                  {/* JOB TITLE */}
+                  {/* COMPANY TYPE */}
 
                   <div className="col-md-6">
-                    <InputField
-                      id="jobTitle"
-                      name="jobTitle"
-                      label="Job Title"
-                      value={formData.jobTitle}
+                    <SelectField
+                      id="companyType"
+                      name="companyType"
+                      label="Company Type"
+                      value={formData.companyType}
+                      options={COMPANY_TYPE_OPTIONS}
                       onChange={handleChange}
-                      error={errors.jobTitle}
-                      autoComplete="organization-title"
-                      required
+                      error={errors.companyType}
+                      isRequired
+                    />
+                  </div>
+
+                  {/* INDUSTRY */}
+
+                  <div className="col-md-6">
+                    <SelectField
+                      id="industry"
+                      name="industry"
+                      label="Which industry do you belong to?"
+                      value={formData.industry}
+                      options={INDUSTRY_OPTIONS}
+                      onChange={handleChange}
+                      error={errors.industry}
+                      isRequired
                     />
                   </div>
                 </div>
@@ -630,62 +924,75 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
                 {/* INTERESTS */}
                 {/* ====================================== */}
 
-                <InterestSelection
-                  selected={formData.interests}
-                  onChange={(interests) => setField("interests", interests)}
-                  error={errors.interests}
-                />
+                {interestOptions.length > 0 && (
+                  <InterestSelection
+                    options={interestOptions}
+                    selected={formData.interests}
+                    onChange={(interests) => setField("interests", interests)}
+                    error={errors.interests}
+                  />
+                )}
+
+                {selectedTicket?.documentRequired && (
+                  <div className="mt-4 mb-4 col-12 col-sm-6">
+                    <label className="form-label" htmlFor="userDocument">
+                      Identification Document &ndash; {selectedTicket.name} Card{" "}
+                      <span className="required">*</span>
+                    </label>
+                    {documentFile ? (
+                      <div className="registration-upload-preview">
+                        <Upload aria-hidden="true" size={28} />
+                        <div>
+                          <strong>{documentFile.name}</strong>
+                          <span>
+                            {(documentFile.size / 1024 / 1024).toFixed(2)} MB
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          className="registration-upload-remove"
+                          title="Remove document"
+                          aria-label="Remove document"
+                          onClick={() => setDocumentFile(null)}
+                        >
+                          <X aria-hidden="true" size={18} />
+                        </button>
+                      </div>
+                    ) : (
+                      <label
+                        className="registration-upload-box"
+                        htmlFor="userDocument"
+                      >
+                        <Upload aria-hidden="true" size={32} />
+                        <strong>Click to Upload ID</strong>
+                        <span>Allowed jpg, png. Max size: 5MB</span>
+                      </label>
+                    )}
+                    <input
+                      id="userDocument"
+                      name="userDocument"
+                      type="file"
+                      accept="image/jpeg,image/png"
+                      className="visually-hidden"
+                      onChange={handleDocumentChange}
+                    />
+                    {errors.userDocument && (
+                      <div className="invalid-feedback d-block">
+                        {errors.userDocument}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* {showVisaQuestion && ( */}
-                <div className="mt-2 mb-4 d-flex">
-                  <label style={{ marginRight: 10 }}>
-                    Do you need a visa invitation letter?
-                    <span className="required"> *</span>
-                  </label>
-
-                  <br className="visa-break-lg" />
-
-                  <label>
-                    <input
-                      type="radio"
-                      name="visa_required"
-                      value="yes"
-                      checked={formData.visa_required === "yes"}
-                      onChange={() => {
-                        setField("visa_required", "yes");
-                        setVisaRequired("yes");
-                        setShowVisaModal(true);
-                      }}
-                      style={{ marginRight: 5 }}
-                    />
-                    Yes
-                  </label>
-
-                  <label style={{ marginLeft: 10 }}>
-                    <input
-                      type="radio"
-                      name="visa_required"
-                      value="no"
-                      checked={formData.visa_required === "no"}
-                      onChange={() => {
-                        setField("visa_required", "no");
-                        setVisaRequired("no");
-                        setShowVisaModal(false);
-                      }}
-                      style={{ marginRight: 5 }}
-                    />
-                    No
-                  </label>
-
-                  {errors.visa_required && (
-                    <div
-                      className="invalid-feedback"
-                      style={{ display: "block" }}
-                    >
-                      {errors.visa_required}
-                    </div>
-                  )}
-                </div>
+                <VisaQuestion
+                  value={formData.visa_required}
+                  error={errors.visa_required}
+                  onChange={(value) => {
+                    setField("visa_required", value);
+                    setShowVisaModal(value === "yes");
+                  }}
+                />
                 {/* )} */}
 
                 {/* ====================================== */}
@@ -734,11 +1041,16 @@ export default function RegistrationForm({ countries = [], selectedTicket }) {
           <div className={`form-right-col ${selectedTicket?.className || ""}`}>
             <SelectedPass ticket={selectedTicket} />
 
-            <PromoCode
-              promoCode={formData.promoCode}
-              onChange={handleChange}
-              onValidate={handlePromoValidate}
-            />
+            {Number(selectedTicket?.priceAmount || 0) > 0 && (
+              <PromoCode
+                promoCode={formData.promoCode}
+                onChange={handleChange}
+                onValidate={handlePromoValidate}
+                loading={promoState.loading}
+                message={promoState.message}
+                success={promoState.success}
+              />
+            )}
 
             <BadgePreview formData={formData} selectedTicket={selectedTicket} />
           </div>

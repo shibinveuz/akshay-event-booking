@@ -3,7 +3,7 @@ import WelcomeSection from "./WelcomeSection";
 import EventInfoSection from "./EventInfoSection";
 import BadgeInstructions from "./BadgeInstructions";
 
-export default function Confirmation({ data }) {
+export default function Confirmation({ data, countries = [] }) {
   if (!data) {
     return (
       <div className="main-container">
@@ -27,7 +27,7 @@ export default function Confirmation({ data }) {
           <div className="content-area">
             <WelcomeSection data={data} />
 
-            <EventInfoSection data={data} />
+            <EventInfoSection data={data} countries={countries} />
 
             <BadgeInstructions />
           </div>

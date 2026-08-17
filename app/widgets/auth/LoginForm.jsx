@@ -1,12 +1,108 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Mail, ShieldCheck } from "lucide-react";
+import { requestOtpAction } from "@/app/lib/api/visitor";
+
+const RECAPTCHA_SCRIPT_ID = "login-recaptcha-v3";
+
+function executeRecaptcha(siteKey, action) {
+  if (!siteKey || typeof window === "undefined") {
+    return Promise.resolve("");
+  }
+
+  return new Promise((resolve) => {
+    let resolved = false;
+
+    const timeout = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        console.warn("reCAPTCHA execution timed out, proceeding with OTP request.");
+        resolve("");
+      }
+    }, 2500);
+
+    const safeResolve = (token) => {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timeout);
+        resolve(token || "");
+      }
+    };
+
+    try {
+      if (window.grecaptcha?.execute) {
+        window.grecaptcha.ready(() => {
+          window.grecaptcha
+            .execute(siteKey, { action })
+            .then(safeResolve)
+            .catch(() => safeResolve(""));
+        });
+        return;
+      }
+
+      const existingScript = document.getElementById(RECAPTCHA_SCRIPT_ID);
+      if (!existingScript) {
+        const script = document.createElement("script");
+        script.id = RECAPTCHA_SCRIPT_ID;
+        script.src = `https://www.recaptcha.net/recaptcha/api.js?render=${encodeURIComponent(
+          siteKey,
+        )}`;
+        script.async = true;
+        script.onload = () => {
+          if (window.grecaptcha?.execute) {
+            window.grecaptcha.ready(() => {
+              window.grecaptcha
+                .execute(siteKey, { action })
+                .then(safeResolve)
+                .catch(() => safeResolve(""));
+            });
+          } else {
+            safeResolve("");
+          }
+        };
+        script.onerror = () => safeResolve("");
+        document.head.appendChild(script);
+      } else {
+        let checks = 0;
+        const interval = setInterval(() => {
+          checks++;
+          if (window.grecaptcha?.execute) {
+            clearInterval(interval);
+            window.grecaptcha.ready(() => {
+              window.grecaptcha
+                .execute(siteKey, { action })
+                .then(safeResolve)
+                .catch(() => safeResolve(""));
+            });
+          } else if (checks > 15) {
+            clearInterval(interval);
+            safeResolve("");
+          }
+        }, 100);
+      }
+    } catch {
+      safeResolve("");
+    }
+  });
+}
 
 export default function LoginForm({ onOtpRequested }) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+
+  useEffect(() => {
+    if (siteKey && typeof document !== "undefined" && !document.getElementById(RECAPTCHA_SCRIPT_ID)) {
+      const script = document.createElement("script");
+      script.id = RECAPTCHA_SCRIPT_ID;
+      script.src = `https://www.recaptcha.net/recaptcha/api.js?render=${encodeURIComponent(siteKey)}`;
+      script.async = true;
+      document.head.appendChild(script);
+    }
+  }, [siteKey]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -28,17 +124,15 @@ export default function LoginForm({ onOtpRequested }) {
     try {
       setSubmitting(true);
 
-      /*
-       * Real server-side OTP request will go here later.
-       *
-       * const result = await requestOtp(trimmedEmail);
-       *
-       * if (!result?.success) {
-       *   throw new Error(result?.message || "Unable to send OTP");
-       * }
-       */
+      const recaptchaToken = await executeRecaptcha(siteKey, "otp");
 
-      onOtpRequested(trimmedEmail);
+      const result = await requestOtpAction(trimmedEmail, recaptchaToken);
+
+      if (!result?.success) {
+        throw new Error(result?.message || "Unable to send OTP.");
+      }
+
+      onOtpRequested(trimmedEmail, result.otpToken);
     } catch (error) {
       setError(error?.message || "Unable to send OTP. Please try again.");
     } finally {

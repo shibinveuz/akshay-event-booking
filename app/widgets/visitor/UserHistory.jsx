@@ -84,6 +84,14 @@ export default function UserHistory({ history = [] }) {
                       <td>{item.ipAddress}</td>
                     </tr>
                   ))}
+
+                  {history.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="text-center py-4">
+                        No user history is available.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -130,6 +138,12 @@ export default function UserHistory({ history = [] }) {
                     </div>
                   </div>
                 ))}
+
+                {history.length === 0 && (
+                  <div className="col-12 text-center py-4">
+                    No user history is available.
+                  </div>
+                )}
               </div>
             </div>
           </div>

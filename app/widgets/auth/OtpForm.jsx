@@ -2,11 +2,47 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { verifyOtpAction, requestOtpAction } from "@/app/lib/api/visitor";
 
 const OTP_LENGTH = 4;
 const OTP_EXPIRY_SECONDS = 5 * 60;
+const RECAPTCHA_SCRIPT_ID = "login-recaptcha-v3";
 
-export default function OtpForm({ email, onBack }) {
+function executeRecaptcha(siteKey, action) {
+  if (!siteKey || typeof window === "undefined") {
+    return Promise.resolve("");
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const timeout = window.setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        resolve("");
+      }
+    }, 3000);
+    const finish = (token = "") => {
+      if (!settled) {
+        settled = true;
+        window.clearTimeout(timeout);
+        resolve(token);
+      }
+    };
+
+    if (window.grecaptcha?.execute) {
+      window.grecaptcha.ready(() => {
+        window.grecaptcha
+          .execute(siteKey, { action })
+          .then(finish)
+          .catch(() => finish());
+      });
+      return;
+    }
+    finish();
+  });
+}
+
+export default function OtpForm({ email, initialOtpToken, onBack }) {
   const router = useRouter();
 
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(""));
@@ -14,6 +50,7 @@ export default function OtpForm({ email, onBack }) {
   const [error, setError] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
+  const [otpToken, setOtpToken] = useState(initialOtpToken);
 
   const [secondsLeft, setSecondsLeft] = useState(OTP_EXPIRY_SECONDS);
 
@@ -116,20 +153,15 @@ export default function OtpForm({ email, onBack }) {
       setVerifying(true);
       setError("");
 
-      /*
-       * Real server-side OTP verification will go here.
-       *
-       * const result = await verifyOtp({
-       *   email,
-       *   otp: code,
-       * });
-       *
-       * if (!result?.success) {
-       *   throw new Error(result?.message || "Invalid OTP");
-       * }
-       */
+      const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+      const recaptchaToken = await executeRecaptcha(siteKey, "login");
+      const result = await verifyOtpAction(otpToken, code, recaptchaToken);
 
-      router.push("/visitor-portal");
+      if (!result?.success) {
+        throw new Error(result?.message || "Invalid OTP code.");
+      }
+
+      router.replace("/visitor-portal");
     } catch (error) {
       setError(error?.message || "OTP verification failed. Please try again.");
     } finally {
@@ -142,12 +174,16 @@ export default function OtpForm({ email, onBack }) {
       setResending(true);
       setError("");
 
-      /*
-       * Real server-side resend API goes here.
-       *
-       * await resendOtp(email);
-       */
+      const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+      const recaptchaToken = await executeRecaptcha(siteKey, "regenerateotp");
 
+      const result = await requestOtpAction(email, recaptchaToken);
+
+      if (!result?.success) {
+        throw new Error(result?.message || "Unable to resend OTP.");
+      }
+
+      setOtpToken(result.otpToken);
       setOtp(Array(OTP_LENGTH).fill(""));
       setSecondsLeft(OTP_EXPIRY_SECONDS);
 

@@ -1,8 +1,13 @@
-import Link from "next/link";
-import { CalendarPlus, Download, MapPin, IdCard, UserPlus } from "lucide-react";
+"use client";
 
-export default function EventInfoSection({ data }) {
+import Link from "next/link";
+import { useState } from "react";
+import { CalendarPlus, Download, MapPin, IdCard, UserPlus } from "lucide-react";
+import VisaApplicationModal from "@/app/widgets/registration/VisaApplicationModal";
+
+export default function EventInfoSection({ data, countries = [] }) {
   const event = data.event || {};
+  const [showVisaModal, setShowVisaModal] = useState(false);
 
   return (
     <div className="event-info-section">
@@ -16,7 +21,7 @@ export default function EventInfoSection({ data }) {
             <MapPin size={17} />
 
             <a
-              href={event.locationUrl || "#"}
+              href={event.locationUrl}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -25,7 +30,12 @@ export default function EventInfoSection({ data }) {
           </div>
 
           <div className="event-actions">
-            <a href={event.calendarUrl || "#"} className="add-calendar-link">
+            <a
+              href={event.calendarUrl}
+              className="add-calendar-link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <CalendarPlus size={17} />
               ADD TO CALENDAR
             </a>
@@ -33,7 +43,12 @@ export default function EventInfoSection({ data }) {
         </div>
 
         <div className="event-actions-right">
-          <a href={data.confirmationEmailUrl || "#"} className="action-link">
+          <a
+            href={data.confirmationEmailUrl}
+            className="action-link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <Download size={17} />
             DOWNLOAD CONFIRMATION EMAIL
           </a>
@@ -43,12 +58,24 @@ export default function EventInfoSection({ data }) {
             START NEW REGISTRATION
           </Link>
 
-          <a href={data.visaUrl || "#"} className="action-link">
+          <button
+            type="button"
+            className="action-link"
+            onClick={() => setShowVisaModal(true)}
+          >
             <IdCard size={17} />
             Apply for Visa Invitation Letter
-          </a>
+          </button>
         </div>
       </div>
+
+      <VisaApplicationModal
+        show={showVisaModal}
+        onHide={() => setShowVisaModal(false)}
+        countries={countries}
+        registrationId={data.registrationId}
+        accessContext="confirmation"
+      />
     </div>
   );
 }

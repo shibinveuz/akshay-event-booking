@@ -1,97 +1,96 @@
-const interestOptions = [
-  {
-    value: "Artificial",
-    label: "Artificial Intelligence",
-    hasProducts: false,
-  },
-  {
-    value: "Smart",
-    label: "Smart Cities",
-    hasProducts: false,
-  },
-  {
-    value: "Software",
-    label: "Software Services",
-    hasProducts: false,
-  },
-  {
-    value: "BigData",
-    label: "Big Data & Analytics",
-    hasProducts: true,
-  },
-  {
-    value: "CloudServices",
-    label: "Cloud Services",
-    hasProducts: true,
-  },
-];
+function normalizeOptions(options) {
+  return options
+    .map((interest) => {
+      if (typeof interest === "string") {
+        return { label: interest, value: interest };
+      }
 
-export default function InterestSelection({ selected = [], onChange, error }) {
-  const toggleInterest = (interest) => {
-    if (selected.includes(interest.value)) {
-      onChange(selected.filter((item) => item !== interest.value));
+      return {
+        label: interest?.name || interest?.product_name || interest?.title || "",
+        value: interest?.value ?? interest?.id,
+      };
+    })
+    .filter(
+      (interest) =>
+        interest.label && interest.value !== null && interest.value !== undefined,
+    );
+}
+
+export function getRequiredInterestCount(options = []) {
+  return Math.min(3, normalizeOptions(options).length);
+}
+
+export default function InterestSelection({
+  options = [],
+  selected = [],
+  onChange,
+  error,
+  readOnly = false,
+  required = true,
+}) {
+  const normalizedOptions = normalizeOptions(options);
+  const isSelected = (value) =>
+    selected.some((item) => String(item) === String(value));
+  const visibleOptions = readOnly
+    ? normalizedOptions.filter((interest) => isSelected(interest.value))
+    : normalizedOptions;
+
+  if (visibleOptions.length === 0) return null;
+
+  const toggleInterest = (value) => {
+    if (readOnly || typeof onChange !== "function") return;
+
+    if (isSelected(value)) {
+      onChange(selected.filter((item) => String(item) !== String(value)));
       return;
     }
 
-    onChange([...selected, interest.value]);
+    onChange([...selected, value]);
   };
 
   return (
     <div className="mt-4">
       <h5 className="mb-3 im-intresting">
         I am interested in sourcing the following solutions/products?{" "}
-        <span className="required">*</span>
+        {required && <span className="required">*</span>}
       </h5>
 
-      <div className="interest-counter mb-3">
-        <span className="badge bg-secondary">{selected.length} selected</span>
+      {!readOnly && (
+        <div className="interest-counter mb-3">
+          <span className="badge bg-secondary">{selected.length} selected</span>
 
-        <span className="text-muted ms-2">Minimum 3 selection required</span>
-      </div>
+          <span className="text-muted ms-2">
+            Minimum {getRequiredInterestCount(options)} selection required
+          </span>
+        </div>
+      )}
 
       <div className="interest-selection">
-        {interestOptions.map((interest) => {
-          const active = selected.includes(interest.value);
+        {visibleOptions.map((interest) => {
+          const active = isSelected(interest.value);
 
           return (
             <div
               key={interest.value}
-              className={`interest-btn has-services-available ${
-                active ? "selected" : ""
+              className={`interest-btn ${
+                readOnly ? "has-services-available" : active ? "selected" : ""
               }`}
-              role="button"
-              tabIndex={0}
-              onClick={() => toggleInterest(interest)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  toggleInterest(interest);
-                }
-              }}
+              role={readOnly ? undefined : "button"}
+              tabIndex={readOnly ? undefined : 0}
+              onClick={readOnly ? undefined : () => toggleInterest(interest.value)}
+              onKeyDown={
+                readOnly
+                  ? undefined
+                  : (event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        toggleInterest(interest.value);
+                      }
+                    }
+              }
             >
               <div className="interest-btn-content">
                 <span className="interest-btn-text">{interest.label}</span>
-              </div>
-
-              <div className="d-flex gap-1">
-                <span className="services-indicator">
-                  {interest.hasProducts
-                    ? "Product Category Available"
-                    : "Product Categories not Available"}
-                </span>
-
-                {interest.hasProducts && (
-                  <div className="interest-btn-actions">
-                    <button
-                      type="button"
-                      className="select-services-btn"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                      }}
-                    >
-                      Select Product Categories
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           );

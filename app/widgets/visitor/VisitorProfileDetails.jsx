@@ -1,159 +1,251 @@
 "use client";
 
-import { useState } from "react";
-
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Pencil, Save, X } from "lucide-react";
+import { updateVisitorProfileAction } from "@/app/lib/api/visitor";
+import { mapCountryOptions } from "@/app/lib/countries";
+import InputField from "@/app/components/form/InputField";
+import SelectField from "@/app/components/form/SelectField/SelectField";
+import PhoneField from "@/app/components/form/PhoneField/PhoneField";
+import InterestSelection from "@/app/widgets/registration/InterestSelection";
+import {
+  COMPANY_TYPE_OPTIONS,
+  INDUSTRY_OPTIONS,
+  INVESTOR_OPTIONS,
+} from "@/app/widgets/registration/profileOptions";
 
-export default function VisitorProfileDetails({ visitor }) {
-  const [editing, setEditing] = useState(false);
-
-  const [fields, setFields] = useState({
+function createFields(visitor) {
+  return {
     firstName: visitor.firstName || "",
     lastName: visitor.lastName || "",
     country: visitor.country || "",
     nationality: visitor.nationality || "",
     mobile: visitor.mobile || "",
     email: visitor.email || "",
+    confirmEmail: visitor.email || "",
     company: visitor.company || "",
     jobTitle: visitor.jobTitle || "",
     companyType: visitor.companyType || "",
     industry: visitor.industry || "",
     investorType: visitor.investorType || "",
-  });
+    phoneCode: visitor.phoneCode || "",
+    phoneCountry: visitor.countryCode || "",
+    countryCode: visitor.countryCode || "",
+    nationalityCode: visitor.nationalityCode || "",
+    interestIds: visitor.interestIds || [],
+  };
+}
+
+function includeCurrentOption(options, value) {
+  if (!value || options.some((option) => option.value === value)) return options;
+  return [...options, { label: value, value }];
+}
+
+export default function VisitorProfileDetails({
+  visitor,
+  countries = [],
+  editing,
+  onEditingChange,
+}) {
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [apiError, setApiError] = useState("");
+  const [errors, setErrors] = useState({});
+  const [fields, setFields] = useState(() => createFields(visitor));
+  const countryOptions = useMemo(() => mapCountryOptions(countries), [countries]);
+  const companyTypeOptions = includeCurrentOption(
+    COMPANY_TYPE_OPTIONS,
+    fields.companyType,
+  );
+  const industryOptions = includeCurrentOption(INDUSTRY_OPTIONS, fields.industry);
+  const investorOptions = includeCurrentOption(
+    INVESTOR_OPTIONS,
+    fields.investorType,
+  );
 
   const setField = (name, value) => {
-    setFields((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
+    setFields((previous) => ({ ...previous, [name]: value }));
+    setErrors((previous) => ({ ...previous, [name]: "" }));
+  };
+
+  const findCountryOption = (value, label) =>
+    countryOptions.find(
+      (option) =>
+        String(option.value) === String(value) ||
+        option.label.toLowerCase() === String(label || "").toLowerCase(),
+    );
+
+  const selectedCountry = findCountryOption(fields.countryCode, fields.country);
+  const selectedNationality = findCountryOption(
+    fields.nationalityCode,
+    fields.nationality,
+  );
+
+  const validate = () => {
+    const nextErrors = {};
+    if (!selectedCountry) nextErrors.countryCode = "Country of residence is required.";
+    if (!selectedNationality) nextErrors.nationalityCode = "Nationality is required.";
+    if (!fields.mobile.trim()) nextErrors.mobile = "Mobile number is required.";
+    if (!fields.company.trim()) nextErrors.company = "Company name is required.";
+    if (!fields.jobTitle.trim()) nextErrors.jobTitle = "Job title is required.";
+    if (!fields.companyType) nextErrors.companyType = "Company type is required.";
+    if (!fields.industry) nextErrors.industry = "Industry is required.";
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleSave = async () => {
-    console.log("Updated visitor:", fields);
+    if (saving || !validate()) return;
+    setSaving(true);
+    setApiError("");
+    setMessage("");
 
-    /*
-      Later call Server Action:
-      await updateVisitorAction(fields)
-    */
+    const result = await updateVisitorProfileAction(fields);
+    if (!result?.success) {
+      setApiError(result?.message || "Unable to update your profile.");
+      setSaving(false);
+      return;
+    }
 
-    setEditing(false);
+    setMessage(result.message || "Your details were updated successfully.");
+    onEditingChange(false);
+    setSaving(false);
+    router.refresh();
+  };
+
+  const handleCancel = () => {
+    setFields(createFields(visitor));
+    setErrors({});
+    setApiError("");
+    onEditingChange(false);
   };
 
   const detailFields = [
-    {
-      key: "firstName",
-      label: "First name",
-    },
-    {
-      key: "lastName",
-      label: "Last name",
-    },
-    {
-      key: "country",
-      label: "Country of residence",
-    },
-    {
-      key: "nationality",
-      label: "Nationality",
-    },
-    {
-      key: "mobile",
-      label: "Mobile number",
-    },
-    {
-      key: "email",
-      label: "Email Address",
-      type: "email",
-    },
-    {
-      key: "company",
-      label: "Company name",
-    },
-    {
-      key: "jobTitle",
-      label: "Job title",
-    },
-    {
-      key: "companyType",
-      label: "Company type",
-    },
-    {
-      key: "industry",
-      label: "Industry",
-    },
-    {
-      key: "investorType",
-      label: "Are you an investor?",
-    },
+    ["firstName", "First name"],
+    ["lastName", "Last name"],
+    ["country", "Country of residence"],
+    ["nationality", "Nationality"],
+    ["mobile", "Mobile number"],
+    ["email", "Email Address"],
+    ["company", "Company name"],
+    ["jobTitle", "Job title"],
+    ["companyType", "Company type"],
+    ["industry", "Industry"],
+    ["investorType", "Are you an investor?"],
   ];
+  const configuredInterestOptions = visitor.interestOptions || [];
+  const displayInterestOptions = (visitor.interests || []).map(
+    (interest, index) => ({
+      id: visitor.interestIds?.[index] ?? interest,
+      name: interest,
+    }),
+  );
+  const hasEditableInterestOptions = configuredInterestOptions.length > 0;
+  const interestOptions =
+    editing && hasEditableInterestOptions
+      ? configuredInterestOptions
+      : displayInterestOptions;
+  const selectedInterests =
+    editing && hasEditableInterestOptions
+      ? fields.interestIds
+      : displayInterestOptions.map((interest) => interest.id);
 
   return (
     <div className="details-section" id="visitorRegform">
       <div className="details-header">
         <h2 className="details-title">Your Details</h2>
-
         {!editing ? (
           <button
             type="button"
             className="edit-btn"
-            onClick={() => setEditing(true)}
+            onClick={() => {
+              setMessage("");
+              setFields(createFields(visitor));
+              onEditingChange(true);
+            }}
           >
-            <Pencil size={16} />
-            Edit
+            <Pencil size={16} /> Edit
           </button>
         ) : (
           <div className="d-flex gap-2">
-            <button type="button" className="edit-btn" onClick={handleSave}>
-              <Save size={16} />
-              Save
+            <button type="button" className="edit-btn" onClick={handleSave} disabled={saving}>
+              <Save size={16} /> {saving ? "Saving..." : "Save"}
             </button>
-
-            <button
-              type="button"
-              className="edit-btn"
-              onClick={() => setEditing(false)}
-            >
-              <X size={16} />
-              Cancel
+            <button type="button" className="edit-btn" onClick={handleCancel} disabled={saving}>
+              <X size={16} /> Cancel
             </button>
           </div>
         )}
       </div>
 
-      <div className="details-grid">
-        {detailFields.map((field) => (
-          <div className="detail-field" key={field.key}>
-            <label className="detail-label">{field.label}</label>
+      {apiError && <div className="text-danger mt-3">{apiError}</div>}
+      {message && <div className="text-success mt-3">{message}</div>}
 
-            {!editing ? (
-              <div className="detail-value">{fields[field.key] || "-"}</div>
-            ) : (
-              <input
-                type={field.type || "text"}
-                className="detail-input"
-                value={fields[field.key]}
-                onChange={(event) => setField(field.key, event.target.value)}
-              />
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-4">
-        <h5 className="mb-3">
-          I am interested in sourcing the following solutions/products?
-        </h5>
-
-        <div className="interest-selection">
-          {visitor.interests?.map((interest) => (
-            <div className="interest-btn has-services-available" key={interest}>
-              <div className="interest-btn-content">
-                <span className="interest-btn-text">{interest}</span>
+      {!editing ? (
+        <div className="details-grid">
+          {detailFields.map(([key, label]) => (
+            <div className="detail-field" key={key}>
+              <label className="detail-label">{label}</label>
+              <div className="detail-value">
+                {(message ? fields[key] : visitor[key]) || "-"}
               </div>
             </div>
           ))}
         </div>
-      </div>
+      ) : (
+        <div className="details-grid">
+          <InputField id="visitorFirstName" label="First Name" value={fields.firstName} disabled required />
+          <InputField id="visitorLastName" label="Last Name" value={fields.lastName} disabled required />
+          <SelectField
+            id="visitorCountry"
+            name="countryCode"
+            label="Country of Residence"
+            value={selectedCountry?.value || ""}
+            options={countryOptions}
+            onChange={(event, option) => {
+              setField("countryCode", event.target.value);
+              setField("country", option?.label || "");
+              setField("phoneCountry", event.target.value);
+              if (option?.phoneCode) setField("phoneCode", option.phoneCode);
+            }}
+            error={errors.countryCode}
+            isRequired
+          />
+          <SelectField
+            id="visitorNationality"
+            name="nationalityCode"
+            label="Nationality"
+            value={selectedNationality?.value || ""}
+            options={countryOptions}
+            onChange={(event, option) => {
+              setField("nationalityCode", event.target.value);
+              setField("nationality", option?.label || "");
+            }}
+            error={errors.nationalityCode}
+            isRequired
+          />
+          <InputField id="visitorEmail" type="email" label="Email Address" value={fields.email} disabled required />
+          <InputField id="visitorConfirmEmail" type="email" label="Confirm Email Address" value={fields.confirmEmail} disabled required />
+          <PhoneField fields={fields} setField={setField} error={errors.mobile} countriesList={countryOptions} />
+          <InputField id="visitorJobTitle" label="Job Title" value={fields.jobTitle} onChange={(event) => setField("jobTitle", event.target.value)} error={errors.jobTitle} required />
+          <InputField id="visitorCompany" label="Company Name" value={fields.company} onChange={(event) => setField("company", event.target.value)} error={errors.company} required />
+          <SelectField id="visitorCompanyType" name="companyType" label="Company Type" value={fields.companyType} options={companyTypeOptions} onChange={(event) => setField("companyType", event.target.value)} error={errors.companyType} isRequired />
+          <SelectField id="visitorIndustry" name="industry" label="Which industry do you belong to?" value={fields.industry} options={industryOptions} onChange={(event) => setField("industry", event.target.value)} error={errors.industry} isRequired />
+          <SelectField id="visitorInvestor" name="investorType" label="Are you an investor?" value={fields.investorType} options={investorOptions} onChange={(event) => setField("investorType", event.target.value)} />
+        </div>
+      )}
+
+      {interestOptions.length > 0 && (
+        <InterestSelection
+          options={interestOptions}
+          selected={selectedInterests}
+          onChange={(interestIds) => setField("interestIds", interestIds)}
+          readOnly={!editing || !hasEditableInterestOptions}
+          required={false}
+        />
+      )}
     </div>
   );
 }

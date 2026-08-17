@@ -3,19 +3,31 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { History, LogOut, Menu, User } from "lucide-react";
 import LogoutConfirmModal from "./LogoutConfirmModal";
+import { logoutVisitorAction } from "@/app/lib/api/visitor";
 
 export default function VisitorSidebar({ activeTab, onTabChange }) {
+  const router = useRouter();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
   };
 
-  const confirmLogout = () => {
-    // Later call your logout Server Action here.
-    window.location.href = "/";
+  const confirmLogout = async () => {
+    try {
+      setLoggingOut(true);
+      await logoutVisitorAction();
+      router.replace("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setLoggingOut(false);
+      setShowLogoutModal(false);
+    }
   };
 
   return (
@@ -68,10 +80,11 @@ export default function VisitorSidebar({ activeTab, onTabChange }) {
         </div>
       </aside>
 
-      <LogoutConfirmModal 
-        show={showLogoutModal} 
+      <LogoutConfirmModal
+        show={showLogoutModal}
         onHide={() => setShowLogoutModal(false)}
         onClick={confirmLogout}
+        isLoading={loggingOut}
       />
     </>
   );

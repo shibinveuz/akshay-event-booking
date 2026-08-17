@@ -44,7 +44,7 @@ export default function TicketCard({ ticket }) {
                 </span>
               </button> */}
 
-              <p className="ticket-subtitle">{ticket.description}</p>
+              {/* <p className="ticket-subtitle">{ticket.description}</p> */}
 
               <div className="features-grid">
                 {ticket.features.map((feature) => (
@@ -59,10 +59,7 @@ export default function TicketCard({ ticket }) {
               </div>
             </div>
 
-            <Link
-              href={`/registration?ticket_id=${ticket.id}`}
-              className="premium-button"
-            >
+            <Link href="/registration" className="premium-button">
               Get your pass
             </Link>
           </div>
