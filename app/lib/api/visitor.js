@@ -723,7 +723,7 @@ function mapProfile(payload) {
     },
     events,
     confirmationEmailUrl: uid
-      ? `/api/visitor/download/confirmation?uid=${encodeURIComponent(uid)}`
+      ? `/visitor-portal/download/confirmation?uid=${encodeURIComponent(uid)}`
       : "",
     visaRequested,
     visaForm: {
@@ -751,7 +751,7 @@ function mapProfile(payload) {
     },
     visaUrl:
       visaRequested && uid
-        ? `/api/visitor/download/visa?uid=${encodeURIComponent(uid)}`
+        ? `/visitor-portal/download/visa?uid=${encodeURIComponent(uid)}`
         : VISA_GUIDE_URL,
     interests,
     interestOptions,

@@ -20,10 +20,10 @@ export default function VisitorEventInfo({
 
   const uid = visitor?.uid || visitor?.id;
   const visaDownloadUrl =
-    visitor?.visaUrl?.startsWith("/api/")
+    visitor?.visaUrl?.includes("/download/")
       ? visitor.visaUrl
       : uid && visitor?.visaRequested
-        ? `/api/visitor/download/visa?uid=${encodeURIComponent(uid)}`
+        ? `/visitor-portal/download/visa?uid=${encodeURIComponent(uid)}`
         : null;
 
   const handleVisaDownloadClick = (e) => {
