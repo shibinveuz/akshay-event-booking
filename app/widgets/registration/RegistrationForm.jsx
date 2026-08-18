@@ -13,6 +13,7 @@ import PromoCode from "./PromoCode";
 import BadgePreview from "./BadgePreview";
 import RegistrationMessageModal from "./RegistrationMessageModal";
 import FileUploadCropper from "@/app/components/common/FileUploadCropper";
+import { useCurrency } from "@/app/context/CurrencyContext";
 
 import {
   submitRegistrationAction,
@@ -128,6 +129,7 @@ export default function RegistrationForm({
   interestOptions = [],
 }) {
   const router = useRouter();
+  const { currency } = useCurrency();
 
   const [formData, setFormData] = useState(initialFormData);
   const [documentFile, setDocumentFile] = useState(null);
@@ -594,7 +596,7 @@ export default function RegistrationForm({
 
       documentRequired: Boolean(selectedTicket?.documentRequired),
 
-      currency: selectedTicket?.currency || "NGN",
+      currency: currency || selectedTicket?.currency || "NGN",
 
       countryName: country?.label || formData.countryofresidence,
 
@@ -709,7 +711,7 @@ export default function RegistrationForm({
       email: formData.email,
       ticketId: selectedTicket?.id,
       price: selectedTicket?.priceAmount,
-      currency: selectedTicket?.currency,
+      currency: currency || selectedTicket?.currency || "NGN",
     });
 
     if (result?.success) {

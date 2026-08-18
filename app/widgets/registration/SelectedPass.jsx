@@ -1,11 +1,19 @@
+"use client";
+
 import Link from "next/link";
+import { useCurrency } from "@/app/context/CurrencyContext";
 
 export default function SelectedPass({ ticket }) {
+  const { currency } = useCurrency();
+
   if (!ticket) {
     return null;
   }
 
-  const isFree = Number(ticket.price) === 0;
+  const isFree = Number(ticket.price) === 0 || ticket.price === "FREE";
+  const cleanPrice = typeof ticket.price === "string"
+    ? ticket.price.replace(/\s*(NGN|USD)$/i, "").trim()
+    : ticket.price;
 
   return (
     <div className="price-card">
@@ -26,7 +34,7 @@ export default function SelectedPass({ ticket }) {
           <span className="label">Final Price</span>
 
           <span className="amount" id="finalPrice">
-            {isFree ? "FREE" : `${ticket.price} ${ticket.currency}`}
+            {isFree ? "FREE" : `${cleanPrice} ${currency}`}
           </span>
         </div>
       </div>

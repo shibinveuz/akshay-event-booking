@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import VisaApplicationModal from "@/app/widgets/registration/VisaApplicationModal";
 
 import {
   CalendarPlus,
@@ -15,10 +14,28 @@ import {
 
 export default function VisitorEventInfo({
   visitor,
-  countries = [],
   onUpdateRegistration,
 }) {
-  const [showVisaModal, setShowVisaModal] = useState(false);
+  const [visaMessage, setVisaMessage] = useState("");
+
+  const uid = visitor?.uid || visitor?.id;
+  const visaDownloadUrl =
+    visitor?.visaUrl?.startsWith("/api/")
+      ? visitor.visaUrl
+      : uid && visitor?.visaRequested
+        ? `/api/visitor/download/visa?uid=${encodeURIComponent(uid)}`
+        : null;
+
+  const handleVisaDownloadClick = (e) => {
+    if (!visaDownloadUrl) {
+      e.preventDefault();
+      setVisaMessage(
+        "Visa Invitation Letter is not available yet. Please ensure your visa details are completed in your profile.",
+      );
+    } else {
+      setVisaMessage("");
+    }
+  };
 
   return (
     <div className="event-details">
@@ -84,14 +101,35 @@ export default function VisitorEventInfo({
           START NEW REGISTRATION
         </Link>
 
-        <button
-          type="button"
-          className="action-link"
-          onClick={() => setShowVisaModal(true)}
-        >
-          <IdCard size={17} />
-          Apply for Visa Invitation Letter
-        </button>
+        {visaDownloadUrl ? (
+          <a
+            href={visaDownloadUrl}
+            className="action-link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <IdCard size={17} />
+            Download Visa Invitation Letter
+          </a>
+        ) : (
+          <button
+            type="button"
+            className="action-link"
+            onClick={handleVisaDownloadClick}
+          >
+            <IdCard size={17} />
+            Download Visa Invitation Letter
+          </button>
+        )}
+
+        {visaMessage && (
+          <div
+            className="alert alert-warning py-2 px-3 mt-2 text-start"
+            style={{ fontSize: "13px" }}
+          >
+            {visaMessage}
+          </div>
+        )}
 
         <a
           href="#visitorRegform"
@@ -102,15 +140,6 @@ export default function VisitorEventInfo({
           UPDATE REGISTRATION
         </a>
       </div>
-
-      <VisaApplicationModal
-        show={showVisaModal}
-        onHide={() => setShowVisaModal(false)}
-        countries={countries}
-        registrationId={visitor.uid || visitor.id}
-        initialValues={visitor.visaForm}
-        accessContext="visitor"
-      />
     </div>
   );
 }

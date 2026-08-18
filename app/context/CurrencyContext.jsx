@@ -1,11 +1,31 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 const CurrencyContext = createContext(null);
 
 export function CurrencyProvider({ children }) {
-  const [currency, setCurrency] = useState("NGN");
+  const [currency, setCurrencyState] = useState("NGN");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("app_currency");
+      if (saved === "NGN" || saved === "USD") {
+        setCurrencyState(saved);
+      }
+    } catch {
+      // localStorage may fail in restricted environment
+    }
+  }, []);
+
+  const setCurrency = (newCurrency) => {
+    setCurrencyState(newCurrency);
+    try {
+      localStorage.setItem("app_currency", newCurrency);
+    } catch {
+      // ignore
+    }
+  };
 
   return (
     <CurrencyContext.Provider value={{ currency, setCurrency }}>

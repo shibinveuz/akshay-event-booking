@@ -1,7 +1,22 @@
+"use client";
+
 import Link from "next/link";
-import { Check, X } from "lucide-react";
+import { Check } from "lucide-react";
+import { useCurrency } from "@/app/context/CurrencyContext";
 
 export default function TicketCard({ ticket }) {
+  const { currency } = useCurrency();
+
+  const isFree =
+    ticket.price === "FREE" ||
+    Number(ticket.priceAmount || ticket.price) === 0;
+  const rawPrice =
+    typeof ticket.price === "string"
+      ? ticket.price.replace(/\s*(NGN|USD)$/i, "").trim()
+      : ticket.price;
+  const displayPrice = isFree
+    ? "FREE"
+    : `${rawPrice}${currency ? ` ${currency}` : ""}`;
   return (
     <div className="col-lg-6 col-md-6 ticket-item visitor">
       <div className="ticket-container">
@@ -33,7 +48,7 @@ export default function TicketCard({ ticket }) {
                 </div> */}
 
                 <div className="price-tag">
-                  <h3 className="price">{ticket.price}</h3>
+                  <h3 className="price">{displayPrice}</h3>
                 </div>
               </div>
 
