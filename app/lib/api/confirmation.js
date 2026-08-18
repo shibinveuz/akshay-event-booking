@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { readConfirmationToken } from "@/app/lib/confirmation-token";
 import {
@@ -202,7 +203,7 @@ function addConfirmationLinks(data, confirmationId, token = "") {
   };
 }
 
-export async function getStoredConfirmationDetails(confirmationId) {
+export const getStoredConfirmationDetails = cache(async function getStoredConfirmationDetails(confirmationId) {
   const cookieStore = await cookies();
   const storedValue = cookieStore.get(CONFIRMATION_DATA_COOKIE)?.value;
 
@@ -221,7 +222,7 @@ export async function getStoredConfirmationDetails(confirmationId) {
   } catch {
     return null;
   }
-}
+});
 
 export function getTokenConfirmationDetails(token, confirmationId) {
   if (!token || typeof token !== "string") {
@@ -406,7 +407,7 @@ export async function proxyConfirmationDownload(kind, confirmationId, token) {
   }
 }
 
-export async function getConfirmationDetails(confirmationId) {
+export const getConfirmationDetails = cache(async function getConfirmationDetails(confirmationId) {
   if (!confirmationId || typeof confirmationId !== "string") {
     throw new Error("A confirmation ID is required.");
   }
@@ -481,4 +482,4 @@ export async function getConfirmationDetails(confirmationId) {
   throw new Error(
     `Confirmation details are unavailable (${failedResponses.join(" / ") || "invalid response"}).`,
   );
-}
+});

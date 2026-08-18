@@ -30,7 +30,6 @@ export default function VisitorSidebar({ activeTab, onTabChange }) {
 
       setAuthenticated(false);
       router.replace("/login");
-      router.refresh();
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {

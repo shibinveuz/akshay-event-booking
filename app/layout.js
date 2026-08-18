@@ -64,9 +64,7 @@ export default function RootLayout({ children }) {
       <body>
         <Providers>
           <UtmCapture />
-          <Suspense fallback={<Header isAuthenticated={false} />}>
-            <AuthenticatedHeader />
-          </Suspense>
+          <AuthenticatedHeader />
           <main>{children}</main>
           <Footer />
         </Providers>

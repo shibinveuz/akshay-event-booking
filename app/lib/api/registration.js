@@ -1,6 +1,7 @@
 "use server";
 
 import "server-only";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import {
   CONFIRMATION_LIFETIME_SECONDS,
@@ -141,7 +142,7 @@ async function getFormToken() {
   return data.form_token;
 }
 
-export async function getCountries() {
+export const getCountries = cache(async function getCountries() {
   try {
     const response = await fetch(getApiUrl("microsite/v2/countries"), {
       cache: "force-cache",
@@ -157,11 +158,11 @@ export async function getCountries() {
     console.error("Error fetching countries:", error);
     return [];
   }
-}
+});
 
-export async function getVisaCountries() {
+export const getVisaCountries = cache(async function getVisaCountries() {
   return getCountryItems(await getCountries());
-}
+});
 
 function formatDate(date) {
   if (!date?.yyyy || !date?.mm || !date?.dd) {

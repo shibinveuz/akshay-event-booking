@@ -137,8 +137,6 @@ export async function submitVisaApplicationAction({
     }
 
     revalidatePath("/visitor-portal");
-    revalidatePath("/visitor-portal", "page");
-    revalidatePath("/", "layout");
 
     return {
       success: true,

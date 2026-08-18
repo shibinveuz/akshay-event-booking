@@ -14,15 +14,16 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function VisitorPortalPage() {
-  const [visitor, history, countries] = await Promise.all([
-    getVisitorProfile(),
-    getVisitorHistory(),
-    getVisaCountries().catch(() => []),
-  ]);
+  const visitor = await getVisitorProfile();
 
   if (!visitor) {
     redirect("/login");
   }
+
+  const [history, countries] = await Promise.all([
+    getVisitorHistory(),
+    getVisaCountries().catch(() => []),
+  ]);
 
   return (
     <VisitorPortal visitor={visitor} history={history} countries={countries} />

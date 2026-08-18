@@ -218,7 +218,7 @@ function mapHistoryItems(payload) {
   }));
 }
 
-export async function getVisitorHistory({ page = 1, offset = 50 } = {}) {
+export const getVisitorHistory = cache(async function getVisitorHistory({ page = 1, offset = 50 } = {}) {
   try {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get(VISITOR_ACCESS_COOKIE)?.value;
@@ -248,7 +248,7 @@ export async function getVisitorHistory({ page = 1, offset = 50 } = {}) {
     console.error("Unable to fetch visitor history:", error);
     return [];
   }
-}
+});
 
 export async function logoutVisitorAction() {
   try {
@@ -449,8 +449,6 @@ export async function updateVisitorProfileAction(fields) {
     }
 
     revalidatePath("/visitor-portal");
-    revalidatePath("/visitor-portal", "page");
-    revalidatePath("/", "layout");
 
     return {
       success: true,

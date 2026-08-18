@@ -1,9 +1,8 @@
 .fieldGroupWrapper {
-margin-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 .fieldGroup {
   width: 100%;
-  
 }
 .phoneInputWrapper {
   direction: ltr;
@@ -23,11 +22,8 @@ margin-bottom: 1.5rem;
   border-color: #000;
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
 }
-.phoneInputWrapper.error {
-  border-color: #dc3545;
-}
+
 .phoneInputWrapper.error:focus-within {
-  border-color: #dc3545;
   box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.1);
 }
 .phoneInput {
@@ -60,7 +56,8 @@ margin-bottom: 1.5rem;
   color: #333;
   font-size: 0.75rem;
 }
-.active .phoneLabel, .hasValue .phoneLabel {
+.active .phoneLabel,
+.hasValue .phoneLabel {
   color: #000;
 }
 .wrapper {
@@ -80,7 +77,8 @@ margin-bottom: 1.5rem;
   cursor: pointer;
   transition: border-color 0.15s ease;
 }
-.trigger:hover, .trigger[aria-expanded="true"] {
+.trigger:hover,
+.trigger[aria-expanded="true"] {
   background: #f8f9fa;
 }
 .flag {
@@ -166,7 +164,8 @@ margin-bottom: 1.5rem;
   background-color: var(--primary-color);
   color: #fff;
 }
-.optionSelected, .optionSelected:hover {
+.optionSelected,
+.optionSelected:hover {
   background-color: #0f7a1e;
   color: #fff;
 }

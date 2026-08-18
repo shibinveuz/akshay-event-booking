@@ -179,7 +179,6 @@ export default function OtpForm({ email, initialOtpToken, onBack }) {
 
       setAuthenticated(true);
       router.replace("/visitor-portal");
-      router.refresh();
     } catch (error) {
       setError(error?.message || "OTP verification failed. Please try again.");
     } finally {

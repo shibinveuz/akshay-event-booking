@@ -15,8 +15,10 @@ export default function HeaderControls({ isAuthenticated = false }) {
   const authenticated = clientAuthState ?? isAuthenticated;
 
   useEffect(() => {
-    setAuthenticated(isAuthenticated);
-  }, [isAuthenticated, setAuthenticated]);
+    if (clientAuthState !== isAuthenticated) {
+      setAuthenticated(isAuthenticated);
+    }
+  }, [isAuthenticated, clientAuthState, setAuthenticated]);
 
   const isHomePage = pathname === "/";
   const isLoginPage = pathname === "/login";
