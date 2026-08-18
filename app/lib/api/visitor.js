@@ -755,12 +755,19 @@ function mapProfile(payload) {
         : VISA_GUIDE_URL,
     interests,
     interestOptions,
-    interestIds:
-      selectedInterestIds.length > 0
-        ? selectedInterestIds
-        : (Array.isArray(interestValues) ? interestValues : [])
-            .map((item) => (typeof item === "object" ? item?.id : null))
-            .filter((id) => id !== null && id !== undefined),
+    interestIds: (() => {
+      const validOptionIdSet = new Set(interestOptions.map((opt) => String(opt.id)));
+      const rawInterestIds =
+        selectedInterestIds.length > 0
+          ? selectedInterestIds
+          : (Array.isArray(interestValues) ? interestValues : [])
+              .map((item) => (typeof item === "object" ? item?.id : null))
+              .filter((id) => id !== null && id !== undefined);
+
+      return Array.from(
+        new Set(rawInterestIds.map((id) => String(id)).filter(Boolean)),
+      ).filter((id) => validOptionIdSet.size === 0 || validOptionIdSet.has(id));
+    })(),
   };
 }
 

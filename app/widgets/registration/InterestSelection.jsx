@@ -29,23 +29,30 @@ export default function InterestSelection({
   required = true,
 }) {
   const normalizedOptions = normalizeOptions(options);
-  const isSelected = (value) =>
-    selected.some((item) => String(item) === String(value));
-  const visibleOptions = readOnly
-    ? normalizedOptions.filter((interest) => isSelected(interest.value))
-    : normalizedOptions;
+  const optionValueSet = new Set(
+    normalizedOptions.map((opt) => String(opt.value)),
+  );
+  const validSelected = Array.from(
+    new Set((Array.isArray(selected) ? selected : []).map(String)),
+  ).filter((val) => optionValueSet.has(val));
+
+  const isSelected = (value) => validSelected.includes(String(value));
+  const visibleOptions = normalizedOptions;
 
   if (visibleOptions.length === 0) return null;
 
   const toggleInterest = (value) => {
     if (readOnly || typeof onChange !== "function") return;
 
+    const strValue = String(value);
     if (isSelected(value)) {
-      onChange(selected.filter((item) => String(item) !== String(value)));
+      const updated = validSelected.filter((item) => item !== strValue);
+      onChange(updated);
       return;
     }
 
-    onChange([...selected, value]);
+    const updated = [...validSelected, value];
+    onChange(updated);
   };
 
   return (
@@ -57,7 +64,7 @@ export default function InterestSelection({
 
       {!readOnly && (
         <div className="interest-counter mb-3">
-          <span className="badge bg-secondary">{selected.length} selected</span>
+          <span className="badge bg-secondary">{validSelected.length} selected</span>
 
           <span className="text-muted ms-2">
             Minimum {getRequiredInterestCount(options)} selection required
@@ -72,11 +79,12 @@ export default function InterestSelection({
           return (
             <div
               key={interest.value}
-              className={`interest-btn ${
-                readOnly ? "has-services-available" : active ? "selected" : ""
+              className={`interest-btn ${active ? "selected" : ""} ${
+                readOnly ? "has-services-available" : ""
               }`}
               role={readOnly ? undefined : "button"}
               tabIndex={readOnly ? undefined : 0}
+              style={readOnly ? { cursor: "default" } : undefined}
               onClick={readOnly ? undefined : () => toggleInterest(interest.value)}
               onKeyDown={
                 readOnly

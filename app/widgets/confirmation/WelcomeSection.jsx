@@ -3,7 +3,7 @@ export default function WelcomeSection({ data }) {
   return (
     <div className="welcome-section">
       <h1 className="welcome-title">
-        WELCOME, {data.firstName} {data.lastName || "Guest"}
+        Welcome, {data.firstName} {data.lastName || "Guest"}
       </h1>
 
       <p className="m-0">

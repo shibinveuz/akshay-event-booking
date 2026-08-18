@@ -162,13 +162,22 @@ export default function VisitorProfileDetails({
   );
   const hasEditableInterestOptions = configuredInterestOptions.length > 0;
   const interestOptions =
-    editing && hasEditableInterestOptions
+    hasEditableInterestOptions
       ? configuredInterestOptions
       : displayInterestOptions;
-  const selectedInterests =
-    editing && hasEditableInterestOptions
+  const rawSelectedInterests =
+    fields.interestIds?.length > 0
       ? fields.interestIds
-      : displayInterestOptions.map((interest) => interest.id);
+      : visitor.interestIds?.length > 0
+        ? visitor.interestIds
+        : displayInterestOptions.map((interest) => interest.id);
+
+  const optionValueSet = new Set(
+    interestOptions.map((opt) => String(opt.id ?? opt.value)),
+  );
+  const selectedInterests = Array.from(
+    new Set((rawSelectedInterests || []).map(String)),
+  ).filter((val) => optionValueSet.size === 0 || optionValueSet.has(val));
 
   return (
     <div className="details-section" id="visitorRegform">

@@ -13,7 +13,9 @@ export default function VisitorDetails({ visitor, countries = [] }) {
     <div className="tab-content" id="visitor">
       <div className="content-area">
         <div className="welcome-section">
-          <h1 className="welcome-title">WELCOME, {visitor.firstName}</h1>
+          <h1 className="welcome-title">
+            Welcome, {visitor.firstName} {visitor.lastName}
+          </h1>
 
           <p className="welcome-text">
             Manage your event experience effortlessly – access your registration
