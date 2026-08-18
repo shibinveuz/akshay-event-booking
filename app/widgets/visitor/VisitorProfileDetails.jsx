@@ -211,15 +211,12 @@ export default function VisitorProfileDetails({
           {detailFields.map(([key, label]) => (
             <div className="detail-field" key={key}>
               <label className="detail-label">{label}</label>
-              <div className="detail-value">
-                {(message ? fields[key] : visitor[key]) || "-"}
-              </div>
+              <div className="detail-value">{visitor[key] || "-"}</div>
             </div>
           ))}
         </div>
       ) : (
-        <>
-          <div className="details-grid">
+        <div className="details-grid">
           <InputField
             id="visitorFirstName"
             label="First Name"
@@ -322,18 +319,19 @@ export default function VisitorProfileDetails({
             error={errors.industry}
             isRequired
           />
-          </div>
-
-          <VisaQuestion
-            value={fields.visaRequired}
-            error={errors.visaRequired}
-            onChange={(value) => {
-              setField("visaRequired", value);
-              setShowVisaModal(value === "yes");
-            }}
-          />
-        </>
+        </div>
       )}
+
+      <VisaQuestion
+        value={fields.visaRequired}
+        error={errors.visaRequired}
+        readOnly={!editing}
+        onChange={(value) => {
+          if (!editing) return;
+          setField("visaRequired", value);
+          setShowVisaModal(value === "yes");
+        }}
+      />
 
       {interestOptions.length > 0 && (
         <InterestSelection

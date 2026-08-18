@@ -140,8 +140,27 @@ async function fetchVisitorProfilePayload(accessToken) {
 }
 
 function getVisitorRecord(payload) {
+  if (!payload || typeof payload !== "object") return {};
   const envelope = payload?.data ?? payload;
-  return envelope?.data ?? envelope;
+  const inner = envelope?.data ?? envelope;
+  const formData = inner?.form_data ?? envelope?.form_data;
+  if (Array.isArray(formData)) {
+    return formData[0] || {};
+  }
+  if (formData && typeof formData === "object") {
+    return formData;
+  }
+  const attendee =
+    inner?.attendee ??
+    envelope?.attendee ??
+    inner?.user ??
+    envelope?.user ??
+    inner?.profile_data ??
+    envelope?.profile_data;
+  if (attendee && typeof attendee === "object") {
+    return attendee;
+  }
+  return inner && typeof inner === "object" ? inner : envelope;
 }
 
 const getCachedVisitorProfile = cache(async () => {
@@ -293,12 +312,20 @@ export async function updateVisitorProfileAction(fields) {
     // can never modify them during an editable-profile update.
     const currentPayload = await fetchVisitorProfilePayload(accessToken);
     const currentVisitor = getVisitorRecord(currentPayload);
+
     const firstName =
       currentVisitor?.firstname || currentVisitor?.first_name || "";
     const lastName =
       currentVisitor?.lastname || currentVisitor?.last_name || "";
     const email =
       currentVisitor?.emailid || currentVisitor?.email || "";
+
+    const registrationId =
+      currentVisitor?.registration_id ||
+      currentVisitor?.uid ||
+      currentVisitor?.id ||
+      currentVisitor?.unique_id ||
+      "";
 
     if (!["yes", "no"].includes(fields.visaRequired)) {
       return {
@@ -316,6 +343,32 @@ export async function updateVisitorProfileAction(fields) {
       };
     }
 
+    const cleanedMobile = String(fields.mobile || "").replace(/\D/g, "");
+
+    const visaDob = formatDate(
+      currentVisitor?.visa_dob || currentVisitor?.passport_dob || currentVisitor?.dob
+    );
+    const passportExpiryDate = formatDate(
+      currentVisitor?.passport_expiry_date || currentVisitor?.passport_expiry
+    );
+    const passportNationality =
+      currentVisitor?.passport_nationality ||
+      currentVisitor?.passport_nationality_code ||
+      "";
+    const passportCountry =
+      currentVisitor?.passport_country ||
+      currentVisitor?.passport_country_code ||
+      "";
+    const passportFullName =
+      currentVisitor?.passport_fullname ||
+      currentVisitor?.passport_name ||
+      currentVisitor?.passport_full_name ||
+      "";
+    const passportNumber =
+      currentVisitor?.passport_number ||
+      currentVisitor?.passport_num ||
+      "";
+
     const response = await fetch(apiUrl("microsite/v1/login-user-retrive-update"), {
       method: "PUT",
       headers: {
@@ -325,47 +378,62 @@ export async function updateVisitorProfileAction(fields) {
       },
       body: JSON.stringify({
         form_data: {
+          ...(registrationId
+            ? {
+                registration_id: registrationId,
+                uid: registrationId,
+                id: registrationId,
+                unique_id: registrationId,
+              }
+            : {}),
           firstname: firstName,
+          first_name: firstName,
           lastname: lastName,
+          last_name: lastName,
           emailid: String(email).trim().toLowerCase(),
+          email: String(email).trim().toLowerCase(),
           Confirmemail: String(email).trim().toLowerCase(),
-          phoneNumber: String(fields.mobile || "").replace(/\D/g, ""),
+          phoneNumber: cleanedMobile,
+          mobile: cleanedMobile,
+          phone_number: cleanedMobile,
           country_code: fields.phoneCode || "",
+          phone_code: fields.phoneCode || "",
           country: fields.country || "",
+          country_name: fields.country || "",
           country_codes: fields.countryCode || "",
+          country_code_iso: fields.countryCode || "",
           nationality: fields.nationality || "",
+          nationality_name: fields.nationality || "",
           nationality_code: fields.nationalityCode || "",
-          companyname: fields.company?.trim(),
-          jobtitle: fields.jobTitle?.trim(),
+          companyname: fields.company?.trim() || "",
+          company_name: fields.company?.trim() || "",
+          jobtitle: fields.jobTitle?.trim() || "",
+          job_title: fields.jobTitle?.trim() || "",
+          designation: fields.jobTitle?.trim() || "",
           companytype: fields.companyType || "",
+          company_type: fields.companyType || "",
           industry: fields.industry || "",
           visa_required: requestedVisaRequired,
-          // This endpoint updates the complete registration record. Preserve
-          // visa details saved by VisaApplicationModal so a later profile save
-          // cannot clear or invalidate the visa preference.
-          visa_dob: requestedVisaRequired
-            ? currentVisitor?.visa_dob || null
-            : null,
-          passport_expiry_date:
-            requestedVisaRequired
-              ? currentVisitor?.passport_expiry_date || null
-              : null,
-          passport_nationality:
-            requestedVisaRequired
-              ? currentVisitor?.passport_nationality || ""
-              : "",
-          passport_country: requestedVisaRequired
-            ? currentVisitor?.passport_country || ""
-            : "",
-          passport_fullname: requestedVisaRequired
-            ? currentVisitor?.passport_fullname || ""
-            : "",
-          passport_number: requestedVisaRequired
-            ? currentVisitor?.passport_number || ""
-            : "",
+          visaRequired: requestedVisaRequired,
+          is_visa_required: requestedVisaRequired,
+          // Preserve Visa details saved by the dedicated Visa endpoint.
+          visa_dob: requestedVisaRequired ? visaDob : null,
+          passport_dob: requestedVisaRequired ? visaDob : null,
+          passport_expiry_date: requestedVisaRequired ? passportExpiryDate : null,
+          passport_expiry: requestedVisaRequired ? passportExpiryDate : null,
+          passport_nationality: requestedVisaRequired ? passportNationality : "",
+          passport_nationality_code: requestedVisaRequired ? passportNationality : "",
+          passport_country: requestedVisaRequired ? passportCountry : "",
+          passport_country_code: requestedVisaRequired ? passportCountry : "",
+          passport_fullname: requestedVisaRequired ? passportFullName : "",
+          passport_name: requestedVisaRequired ? passportFullName : "",
+          passport_full_name: requestedVisaRequired ? passportFullName : "",
+          passport_number: requestedVisaRequired ? passportNumber : "",
+          passport_num: requestedVisaRequired ? passportNumber : "",
           solutions_products: fields.interestIds || [],
-          department: "N/A",
-          city: "N/A",
+          selected_services: fields.interestIds || [],
+          department: currentVisitor?.department || "N/A",
+          city: currentVisitor?.city || "N/A",
         },
       }),
       cache: "no-store",
@@ -381,6 +449,8 @@ export async function updateVisitorProfileAction(fields) {
     }
 
     revalidatePath("/visitor-portal");
+    revalidatePath("/visitor-portal", "page");
+    revalidatePath("/", "layout");
 
     return {
       success: true,
@@ -484,10 +554,39 @@ function getVisaRequired(visitor) {
   );
 }
 
+function formatDate(date) {
+  if (!date) return null;
+  if (typeof date === "string") {
+    const match = date.trim().match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    if (match) {
+      const [, yyyy, mm, dd] = match;
+      return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
+    }
+    return null;
+  }
+  if (typeof date === "object") {
+    const yyyy = String(date.yyyy || date.year || "").trim();
+    const mm = String(date.mm || date.month || "").trim().padStart(2, "0");
+    const dd = String(date.dd || date.day || "").trim().padStart(2, "0");
+    if (yyyy && mm !== "00" && dd !== "00") {
+      return `${yyyy}-${mm}-${dd}`;
+    }
+  }
+  return null;
+}
+
 function dateParts(value) {
-  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!value) return { yyyy: "", mm: "", dd: "" };
+  if (typeof value === "object") {
+    return {
+      yyyy: String(value.yyyy || value.year || ""),
+      mm: String(value.mm || value.month || ""),
+      dd: String(value.dd || value.day || ""),
+    };
+  }
+  const match = String(value).match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
   return match
-    ? { yyyy: match[1], mm: match[2], dd: match[3] }
+    ? { yyyy: match[1], mm: match[2].padStart(2, "0"), dd: match[3].padStart(2, "0") }
     : { yyyy: "", mm: "", dd: "" };
 }
 
@@ -625,12 +724,27 @@ function mapProfile(payload) {
       : "",
     visaRequested,
     visaForm: {
-      passport_fullname: visitor.passport_fullname || "",
-      visa_dob: dateParts(visitor.visa_dob),
-      passport_number: visitor.passport_number || "",
-      passport_expiry_date: dateParts(visitor.passport_expiry_date),
-      passport_nationality: visitor.passport_nationality || "",
-      passport_country: visitor.passport_country || "",
+      passport_fullname:
+        visitor.passport_fullname ||
+        visitor.passport_name ||
+        visitor.passport_full_name ||
+        "",
+      visa_dob: dateParts(
+        visitor.visa_dob || visitor.passport_dob || visitor.dob,
+      ),
+      passport_number:
+        visitor.passport_number || visitor.passport_num || "",
+      passport_expiry_date: dateParts(
+        visitor.passport_expiry_date || visitor.passport_expiry,
+      ),
+      passport_nationality:
+        visitor.passport_nationality ||
+        visitor.passport_nationality_code ||
+        "",
+      passport_country:
+        visitor.passport_country ||
+        visitor.passport_country_code ||
+        "",
     },
     visaUrl:
       visaRequested && uid

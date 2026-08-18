@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { submitVisaApplicationAction } from "@/app/lib/api/visa";
+import { mapCountryOptions } from "@/app/lib/countries";
 import VisaApplyModal from "./VisaApplyModal";
 import { isVisaFormComplete, useVisaForm } from "./useVisaForm";
 
@@ -33,10 +34,21 @@ export default function VisaApplicationModal({
 
     try {
       setIsLoading(true);
+      const countryOptions = mapCountryOptions(countries);
+      const countryName = (value) =>
+        countryOptions.find(
+          (option) =>
+            String(option.value) === String(value) ||
+            option.label.toLowerCase() === String(value).toLowerCase(),
+        )?.label || value;
       const result = await submitVisaApplicationAction({
         accessContext,
         registrationId,
-        visaForm,
+        visaForm: {
+          ...visaForm,
+          passport_nationality: countryName(visaForm.passport_nationality),
+          passport_country: countryName(visaForm.passport_country),
+        },
       });
 
       if (!result?.success) {

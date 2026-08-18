@@ -566,7 +566,9 @@ export default function RegistrationForm({
 
     const cleanMobile = formData.mobile.replace(/\D/g, "");
 
-    const cleanPhoneCode = String(phoneCode).replace(/^\+/, "");
+    // The registration API expects an E.164 calling code (for example +971).
+    // Sending digits only makes its phone parser fall back to the default code.
+    const cleanPhoneCode = `+${String(phoneCode).replace(/\D/g, "")}`;
 
     const country = countryOptions.find(
       (item) => String(item.value) === String(formData.countryofresidence),
@@ -582,7 +584,7 @@ export default function RegistrationForm({
 
       mobile: cleanMobile,
 
-      mobileFull: `+${cleanPhoneCode}${cleanMobile}`,
+      mobileFull: `${cleanPhoneCode}${cleanMobile}`,
 
       ticketId: selectedTicket?.id ?? null,
 

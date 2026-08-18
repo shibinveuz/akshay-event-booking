@@ -1,4 +1,11 @@
-export default function VisaQuestion({ value, error, onChange }) {
+export default function VisaQuestion({
+  value,
+  error,
+  onChange,
+  readOnly = false,
+  disabled = false,
+}) {
+  const isInteractive = !readOnly && !disabled;
   return (
     <div className="mt-2 mb-4 d-flex">
       <label style={{ marginRight: 10 }}>
@@ -14,7 +21,8 @@ export default function VisaQuestion({ value, error, onChange }) {
           name="visa_required"
           value="yes"
           checked={value === "yes"}
-          onChange={() => onChange("yes")}
+          disabled={!isInteractive}
+          onChange={() => isInteractive && onChange?.("yes")}
           style={{ marginRight: 5 }}
         />
         Yes
@@ -26,7 +34,8 @@ export default function VisaQuestion({ value, error, onChange }) {
           name="visa_required"
           value="no"
           checked={value === "no"}
-          onChange={() => onChange("no")}
+          disabled={!isInteractive}
+          onChange={() => isInteractive && onChange?.("no")}
           style={{ marginRight: 5 }}
         />
         No

@@ -17,6 +17,12 @@ export default function VisaApplyModal({
   message = "",
 }) {
   const countryOptions = mapCountryOptions(countries);
+  const countryValue = (value) =>
+    countryOptions.find(
+      (option) =>
+        String(option.value) === String(value) ||
+        option.label.toLowerCase() === String(value || "").toLowerCase(),
+    )?.value || value;
 
   const dayOptions = Array.from({ length: 31 }, (_, i) => {
     const val = String(i + 1).padStart(2, "0");
@@ -210,7 +216,7 @@ export default function VisaApplyModal({
                       id="passport_nationality"
                       name="passport_nationality"
                       label="Nationality"
-                      value={visaForm.passport_nationality}
+                      value={countryValue(visaForm.passport_nationality)}
                       options={countryOptions}
                       onChange={(event) =>
                         setVisaField("passport_nationality", event.target.value)
@@ -224,7 +230,7 @@ export default function VisaApplyModal({
                       id="passport_country"
                       name="passport_country"
                       label="Country of Residence"
-                      value={visaForm.passport_country}
+                      value={countryValue(visaForm.passport_country)}
                       options={countryOptions}
                       onChange={(event) =>
                         setVisaField("passport_country", event.target.value)
