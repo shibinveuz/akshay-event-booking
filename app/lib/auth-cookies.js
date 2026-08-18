@@ -9,7 +9,7 @@ export const CONFIRMATION_FORM_TOKEN_COOKIE = "registration_confirmation_form_to
 
 const INVALID_COOKIE_VALUES = new Set(["", "null", "undefined"]);
 
-function isUnexpiredToken(value) {
+export function isUnexpiredToken(value) {
   const token = String(value || "").trim();
 
   if (INVALID_COOKIE_VALUES.has(token.toLowerCase())) return false;

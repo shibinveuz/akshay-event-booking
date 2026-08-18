@@ -9,6 +9,7 @@ import {
   LEGACY_VISITOR_DATA_COOKIE,
   VISITOR_ACCESS_COOKIE,
   VISITOR_REFRESH_COOKIE,
+  isUnexpiredToken,
 } from "@/app/lib/auth-cookies";
 import {
   getDefaultEventDetails,
@@ -132,7 +133,9 @@ async function fetchVisitorProfilePayload(accessToken) {
   );
 
   if (!response.ok) {
-    console.warn(`Visitor profile API returned status ${response.status}.`);
+    if (response.status !== 401 && response.status !== 404) {
+      console.warn(`Visitor profile API returned status ${response.status}.`);
+    }
     return null;
   }
 
@@ -167,7 +170,7 @@ const getCachedVisitorProfile = cache(async () => {
   try {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get(VISITOR_ACCESS_COOKIE)?.value;
-    if (!accessToken) return null;
+    if (!accessToken || !isUnexpiredToken(accessToken)) return null;
     const payload = await fetchVisitorProfilePayload(accessToken);
     return payload ? mapProfile(payload) : null;
   } catch (error) {
@@ -222,7 +225,7 @@ export const getVisitorHistory = cache(async function getVisitorHistory({ page =
   try {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get(VISITOR_ACCESS_COOKIE)?.value;
-    if (!accessToken) return [];
+    if (!accessToken || !isUnexpiredToken(accessToken)) return [];
 
     const query = new URLSearchParams({
       page_number: String(page),
@@ -239,7 +242,9 @@ export const getVisitorHistory = cache(async function getVisitorHistory({ page =
     });
 
     if (!response.ok) {
-      console.warn(`Visitor history API returned status ${response.status}.`);
+      if (response.status !== 401 && response.status !== 404) {
+        console.warn(`Visitor history API returned status ${response.status}.`);
+      }
       return [];
     }
 
@@ -305,7 +310,7 @@ export async function updateVisitorProfileAction(fields) {
   try {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get(VISITOR_ACCESS_COOKIE)?.value;
-    if (!accessToken) return { success: false, message: "Your session has expired." };
+    if (!accessToken || !isUnexpiredToken(accessToken)) return { success: false, message: "Your session has expired." };
 
     // Protected identity fields are required by the backend serializer. Read
     // their canonical values from the authenticated profile so client input
