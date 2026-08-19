@@ -50,7 +50,6 @@ function getDialCode(country) {
   ).replace(/^\+/, "");
 }
 
-
 function executeRecaptcha(siteKey) {
   if (!siteKey) {
     return Promise.reject(
@@ -131,9 +130,24 @@ export default function RegistrationForm({
 
   const [formData, setFormData] = useState(initialFormData);
   const [documentFile, setDocumentFile] = useState(null);
+  const [documentPreviewUrl, setDocumentPreviewUrl] = useState("");
   const [pendingDocumentFile, setPendingDocumentFile] = useState(null);
   const [pendingDocumentUrl, setPendingDocumentUrl] = useState("");
   const [showDocumentCropper, setShowDocumentCropper] = useState(false);
+
+  useEffect(() => {
+    if (!documentFile) {
+      setDocumentPreviewUrl("");
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(documentFile);
+    setDocumentPreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [documentFile]);
 
   const [errors, setErrors] = useState({});
 
@@ -148,7 +162,6 @@ export default function RegistrationForm({
   });
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-
 
   const [showReminderModal, setShowReminderModal] = useState(false);
 
@@ -243,7 +256,11 @@ export default function RegistrationForm({
 
       if (name === "phoneCode" || name === "phoneCountry") {
         if (touched.mobile || errors.mobile || previous.mobile) {
-          const mobileErr = validateSingleField("mobile", previous.mobile, nextFormData);
+          const mobileErr = validateSingleField(
+            "mobile",
+            previous.mobile,
+            nextFormData,
+          );
           setErrors((prev) => ({
             ...prev,
             mobile: mobileErr,
@@ -596,8 +613,6 @@ export default function RegistrationForm({
     }));
   };
 
-
-
   /*
    * ----------------------------------------------------
    * SUBMIT
@@ -676,7 +691,10 @@ export default function RegistrationForm({
         });
       }
 
-      submission.append("marketingConsent", formData.marketingConsent ? "1" : "0");
+      submission.append(
+        "marketingConsent",
+        formData.marketingConsent ? "1" : "0",
+      );
       submission.append(
         "visa_required",
         formData.visa_required === "yes" ? "yes" : "no",
@@ -704,7 +722,10 @@ export default function RegistrationForm({
           );
         }
         if (visaForm.passport_nationality) {
-          submission.append("passport_nationality", visaForm.passport_nationality);
+          submission.append(
+            "passport_nationality",
+            visaForm.passport_nationality,
+          );
         }
         if (visaForm.passport_country) {
           submission.append("passport_country", visaForm.passport_country);
@@ -721,7 +742,6 @@ export default function RegistrationForm({
         submission.append("registrationId", formData.registrationId);
       }
 
-
       submission.append("recaptchaToken", recaptchaToken);
 
       if (documentFile) {
@@ -737,7 +757,6 @@ export default function RegistrationForm({
         }));
         return;
       }
-
 
       /*
        * Registration success
@@ -1099,14 +1118,26 @@ export default function RegistrationForm({
                     </label>
                     {documentFile ? (
                       <div className="registration-upload-preview">
-                        <Upload aria-hidden="true" size={28} />
-                        <div>
-                          <strong>{documentFile.name}</strong>
-                          <span>
+                        <div className="registration-upload-img-wrapper">
+                          {documentPreviewUrl ? (
+                            <img
+                              src={documentPreviewUrl}
+                              alt="Cropped document preview"
+                            />
+                          ) : (
+                            <Upload aria-hidden="true" size={28} />
+                          )}
+                        </div>
+                        <div className="registration-upload-info">
+                          <span className="registration-upload-filename">
+                            {documentFile.name}
+                          </span>
+                          <span className="registration-upload-filesize">
                             {(documentFile.size / 1024 / 1024).toFixed(2)} MB
                           </span>
                           <button
                             type="button"
+                            className="registration-upload-change-btn"
                             onClick={() => documentInputRef.current?.click()}
                           >
                             Change image
@@ -1119,7 +1150,7 @@ export default function RegistrationForm({
                           aria-label="Remove document"
                           onClick={handleDocumentRemove}
                         >
-                          <X aria-hidden="true" size={18} />
+                          <X aria-hidden="true" size={16} />
                         </button>
                       </div>
                     ) : (

@@ -1,3 +1,5 @@
+import RadioField from "@/app/components/form/RadioField/RadioField";
+
 export default function VisaQuestion({
   value,
   error,
@@ -15,7 +17,7 @@ export default function VisaQuestion({
 
       <br className="visa-break-lg" />
 
-      <label>
+      {/* <label>
         <input
           type="radio"
           name="visa_required"
@@ -39,7 +41,28 @@ export default function VisaQuestion({
           style={{ marginRight: 5 }}
         />
         No
-      </label>
+      </label> */}
+      <div className="d-flex gap-3">
+        <RadioField
+          id="visa_required_yes"
+          name="visa_required"
+          value="yes"
+          label="Yes"
+          checked={value === "yes"}
+          disabled={!isInteractive}
+          onChange={() => isInteractive && onChange?.("yes")}
+        />
+
+        <RadioField
+          id="visa_required_no"
+          name="visa_required"
+          value="no"
+          label="No"
+          checked={value === "no"}
+          disabled={!isInteractive}
+          onChange={() => isInteractive && onChange?.("no")}
+        />
+      </div>
 
       {error && (
         <div className="invalid-feedback" style={{ display: "block" }}>

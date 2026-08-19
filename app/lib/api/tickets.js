@@ -1,5 +1,4 @@
 import "server-only";
-import { cache } from "react";
 
 const TICKETS_PATH = "/microsite/v2/tickets";
 const DEFAULT_FREE_TICKET_NAME = "TEST1";
@@ -37,7 +36,7 @@ function getBackendUrl(path) {
   return `${baseUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
 }
 
-export const getTickets = cache(async function getTickets() {
+export async function getTickets() {
   try {
     const response = await fetch(getBackendUrl(TICKETS_PATH), {
       method: "GET",
@@ -65,9 +64,9 @@ export const getTickets = cache(async function getTickets() {
     console.error("Error fetching tickets from backend:", error);
     return { tickets: [] };
   }
-});
+}
 
-export const getTicketAvailability = cache(async function getTicketAvailability(ticketEncryptedId) {
+export async function getTicketAvailability(ticketEncryptedId) {
   if (!ticketEncryptedId) return null;
 
   try {
@@ -100,9 +99,9 @@ export const getTicketAvailability = cache(async function getTicketAvailability(
     console.error("Unable to check ticket availability:", error);
     return null;
   }
-});
+}
 
-export const getPrimaryFreeTicketConfiguration = cache(async function getPrimaryFreeTicketConfiguration() {
+export async function getPrimaryFreeTicketConfiguration() {
   const data = await getTickets();
   const listedTicket = selectPrimaryFreeTicket(data?.tickets || []);
 
@@ -123,4 +122,4 @@ export const getPrimaryFreeTicketConfiguration = cache(async function getPrimary
     ) || null;
 
   return ticket ? { ticket, availability } : null;
-});
+}

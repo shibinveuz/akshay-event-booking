@@ -47,8 +47,8 @@ export default async function ConfirmationPage({ searchParams }) {
     try {
       confirmation = await getConfirmationDetails(confirmationId);
     } catch (error) {
-      console.error("Confirmation details could not be resolved:", {
-        confirmationId,
+      console.warn("Confirmation details could not be resolved:", {
+        confirmationId: confirmationId || "(none)",
         hasConfirmationToken: Boolean(confirmationToken),
         message: error instanceof Error ? error.message : String(error),
       });

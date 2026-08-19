@@ -1,7 +1,6 @@
 "use server";
 
 import "server-only";
-import { cache } from "react";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
@@ -184,7 +183,7 @@ function getVisitorRecord(payload) {
   return inner && typeof inner === "object" ? inner : envelope;
 }
 
-const getCachedVisitorProfile = cache(async () => {
+export async function getVisitorProfile() {
   try {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get(VISITOR_ACCESS_COOKIE)?.value;
@@ -196,10 +195,6 @@ const getCachedVisitorProfile = cache(async () => {
     console.error("Unable to fetch visitor profile:", error);
     return null;
   }
-});
-
-export async function getVisitorProfile() {
-  return getCachedVisitorProfile();
 }
 
 /**
@@ -256,7 +251,7 @@ function mapHistoryItems(payload) {
   }));
 }
 
-export const getVisitorHistory = cache(async function getVisitorHistory({
+export async function getVisitorHistory({
   page = 1,
   offset = 50,
 } = {}) {
@@ -291,7 +286,7 @@ export const getVisitorHistory = cache(async function getVisitorHistory({
     console.error("Unable to fetch visitor history:", error);
     return [];
   }
-});
+}
 
 export async function logoutVisitorAction() {
   try {
