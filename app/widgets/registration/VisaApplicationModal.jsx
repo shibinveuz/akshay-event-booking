@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { submitVisaApplicationAction } from "@/app/lib/api/visa";
 import { mapCountryOptions } from "@/app/lib/countries";
 import VisaApplyModal from "./VisaApplyModal";
@@ -19,11 +19,13 @@ export default function VisaApplicationModal({
   const { visaForm, setVisaField, setVisaDateField } =
     useVisaForm(initialValues);
   const [isLoading, setIsLoading] = useState(false);
+  const loadingRef = useRef(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
   const handleSubmit = async () => {
-    if (isLoading) return;
+    if (isLoading || loadingRef.current) return;
+    loadingRef.current = true;
     setError("");
     setMessage("");
 
@@ -65,6 +67,7 @@ export default function VisaApplicationModal({
         "The visa application request could not reach the server. Check your connection and try again.",
       );
     } finally {
+      loadingRef.current = false;
       setIsLoading(false);
     }
   };

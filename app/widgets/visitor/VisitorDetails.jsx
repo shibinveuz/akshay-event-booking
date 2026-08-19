@@ -6,8 +6,19 @@ import VisitorBadgePreview from "./VisitorBadgePreview";
 import VisitorEventInfo from "./VisitorEventInfo";
 import VisitorProfileDetails from "./VisitorProfileDetails";
 
-export default function VisitorDetails({ visitor, countries = [] }) {
+export default function VisitorDetails({
+  visitor,
+  countries = [],
+  loadCountries,
+}) {
   const [editingProfile, setEditingProfile] = useState(false);
+
+  const handleStartEditing = () => {
+    if (typeof loadCountries === "function") {
+      loadCountries();
+    }
+    setEditingProfile(true);
+  };
 
   return (
     <div className="tab-content" id="visitor">
@@ -31,7 +42,7 @@ export default function VisitorDetails({ visitor, countries = [] }) {
             <VisitorEventInfo
               visitor={visitor}
               countries={countries}
-              onUpdateRegistration={() => setEditingProfile(true)}
+              onUpdateRegistration={handleStartEditing}
             />
           </div>
         </div>
@@ -42,7 +53,13 @@ export default function VisitorDetails({ visitor, countries = [] }) {
           visitor={visitor}
           countries={countries}
           editing={editingProfile}
-          onEditingChange={setEditingProfile}
+          onEditingChange={(isEditing) => {
+            if (isEditing && typeof loadCountries === "function") {
+              loadCountries();
+            }
+            setEditingProfile(isEditing);
+          }}
+          loadCountries={loadCountries}
         />
       </div>
     </div>

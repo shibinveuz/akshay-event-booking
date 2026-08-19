@@ -196,11 +196,55 @@ function getConfiguredSolutionIds(availability, ticketId) {
 
 export async function submitRegistrationAction(submission) {
   try {
-    const serializedPayload = submission.get("payload");
-    const payload = JSON.parse(serializedPayload);
+    const firstName = submission.get("firstName")?.toString().trim() || "";
+    const lastName = submission.get("lastName")?.toString().trim() || "";
+    const email = submission.get("email")?.toString().trim().toLowerCase() || "";
+    const mobile = submission.get("mobile")?.toString().trim() || "";
+    const phoneCode = submission.get("phoneCode")?.toString().trim() || "";
+    const countryofresidence =
+      submission.get("countryofresidence")?.toString().trim() || "";
+    const nationality =
+      submission.get("nationality")?.toString().trim() || "";
+    const company = submission.get("company")?.toString().trim() || "";
+    const companyType =
+      submission.get("companyType")?.toString().trim() || "";
+    const industry = submission.get("industry")?.toString().trim() || "";
+    const jobTitle = submission.get("jobTitle")?.toString().trim() || "";
+
+    const recaptchaToken =
+      submission.get("recaptchaToken")?.toString().trim() || "";
+    const registrationId =
+      submission.get("registrationId")?.toString().trim() || undefined;
+    const marketingConsent =
+      submission.get("marketingConsent") === "1" ||
+      submission.get("marketingConsent") === "true";
+    const visa_required =
+      submission.get("visa_required")?.toString().trim() || "no";
+
+    const requestedSolutionIds = submission
+      .getAll("interests")
+      .map((item) => Number(item))
+      .filter(Number.isInteger);
+
+    const visa_dob = submission.get("visa_dob")?.toString().trim() || null;
+    const passport_expiry_date =
+      submission.get("passport_expiry_date")?.toString().trim() || null;
+    const passport_nationality =
+      submission.get("passport_nationality")?.toString().trim() || "";
+    const passport_country =
+      submission.get("passport_country")?.toString().trim() || "";
+    const passport_fullname =
+      submission.get("passport_fullname")?.toString().trim() || "";
+    const passport_number =
+      submission.get("passport_number")?.toString().trim() || "";
+
     const userDocument = submission.get("userDocument");
     const hasUserDocument =
-      userDocument && typeof userDocument.arrayBuffer === "function";
+      userDocument &&
+      typeof userDocument === "object" &&
+      typeof userDocument.arrayBuffer === "function" &&
+      userDocument.size > 0;
+
     const ticketConfiguration = await getPrimaryFreeTicketConfiguration();
 
     if (!ticketConfiguration) {
@@ -213,21 +257,15 @@ export async function submitRegistrationAction(submission) {
     const trustedTicket = ticketConfiguration.ticket;
     const trustedAvailability = ticketConfiguration.availability;
 
-    if (String(payload.ticketId) !== String(trustedTicket.id)) {
-      return {
-        success: false,
-        message: "The selected ticket is invalid.",
-      };
-    }
 
-    if (!payload.firstName?.trim() || !payload.lastName?.trim()) {
+    if (!firstName || !lastName) {
       return {
         success: false,
         message: "First and last names are required.",
       };
     }
 
-    if (!isValidEmail(payload.email)) {
+    if (!isValidEmail(email)) {
       return {
         success: false,
         message: "Please enter a valid email address.",
@@ -235,9 +273,9 @@ export async function submitRegistrationAction(submission) {
     }
 
     const phoneValidation = validatePhoneNumber(
-      payload.mobile,
-      payload.phoneCode,
-      payload.phoneCountry || payload.countryofresidence,
+      mobile,
+      phoneCode,
+      countryofresidence,
     );
     if (!phoneValidation.isValid) {
       return {
@@ -254,15 +292,27 @@ export async function submitRegistrationAction(submission) {
       };
     }
 
+    if (hasUserDocument) {
+      const mimeType = userDocument.type;
+      const allowedTypes = ["image/jpeg", "image/png"];
+      if (!allowedTypes.includes(mimeType)) {
+        return {
+          success: false,
+          message: "Supporting document must be a JPEG or PNG image.",
+        };
+      }
+      if (userDocument.size > 5 * 1024 * 1024) {
+        return {
+          success: false,
+          message: "Supporting document must be 5 MB or smaller.",
+        };
+      }
+    }
+
     const formToken = await getFormToken();
     const requestBody = new FormData();
-    const visaRequired = payload.visa_required === "yes";
-    const requestedSolutionIds = (Array.isArray(payload.interests)
-      ? payload.interests
-      : []
-    )
-      .map((interest) => Number(interest))
-      .filter(Number.isInteger);
+    const visaRequired = visa_required === "yes";
+
     const configuredSolutionIds = getConfiguredSolutionIds(
       trustedAvailability,
       trustedTicket.id,
@@ -277,33 +327,44 @@ export async function submitRegistrationAction(submission) {
         message: "One or more selected interests are invalid.",
       };
     }
+
+    const countriesList = await getCountries();
+    const countryItems = getCountryItems(countriesList);
+    const countryObj = countryItems.find(
+      (item) => String(item.value) === String(countryofresidence),
+    );
+    const nationalityObj = countryItems.find(
+      (item) => String(item.value) === String(nationality),
+    );
+    const countryName = countryObj?.label || countryofresidence;
+    const nationalityName = nationalityObj?.label || nationality;
+
     const attendee = {
       title: "",
-      firstname: payload.firstName,
-      lastname: payload.lastName,
-      emailid: payload.email,
-      Confirmemail: payload.confirmemail,
-      phoneNumber: payload.mobile,
-      country_code: payload.phoneCode,
-      companyname: payload.company,
-      jobtitle: payload.jobTitle,
-      country: payload.countryName,
-      country_codes: payload.countryofresidence,
-      nationality: payload.nationalityName,
-      nationality_code: payload.nationality,
-      companytype: payload.companyType,
-      industry: payload.industry,
+      firstname: firstName,
+      lastname: lastName,
+      emailid: email,
+      Confirmemail: email,
+      phoneNumber: mobile,
+      country_code: phoneCode,
+      companyname: company,
+      jobtitle: jobTitle,
+      country: countryName,
+      country_codes: countryofresidence,
+      nationality: nationalityName,
+      nationality_code: nationality,
+      companytype: companyType,
+      industry: industry,
       media_name: "",
       media_type: "",
       company_website: "",
       social_link: "",
       first_attempt: false,
-      // The backend accepts product/service primary keys, not display strings.
       solutions_products: solutionIds,
-      terms_condition: payload.terms,
-      age_confirm: payload.ageConfirm,
-      market_mail: payload.marketingConsent,
-      personal_data_terms_and_conditions: payload.terms,
+      terms_condition: true,
+      age_confirm: true,
+      market_mail: marketingConsent,
+      personal_data_terms_and_conditions: true,
       isOldFile: "",
       isBadgeOldFile: "",
       isDocument: documentRequired,
@@ -328,22 +389,12 @@ export async function submitRegistrationAction(submission) {
       ticket_encrypted_id: trustedTicket.ticket_encrypted_id || "",
       sessions_data: [],
       visa_required: visaRequired,
-      visa_dob: visaRequired ? formatDate(payload.visaForm?.visa_dob) : null,
-      passport_expiry_date: visaRequired
-        ? formatDate(payload.visaForm?.passport_expiry_date)
-        : null,
-      passport_nationality: visaRequired
-        ? payload.visaForm?.passport_nationality || ""
-        : "",
-      passport_country: visaRequired
-        ? payload.visaForm?.passport_country || ""
-        : "",
-      passport_fullname: visaRequired
-        ? payload.visaForm?.passport_fullname || ""
-        : "",
-      passport_number: visaRequired
-        ? payload.visaForm?.passport_number || ""
-        : "",
+      visa_dob: visaRequired ? visa_dob : null,
+      passport_expiry_date: visaRequired ? passport_expiry_date : null,
+      passport_nationality: visaRequired ? passport_nationality : "",
+      passport_country: visaRequired ? passport_country : "",
+      passport_fullname: visaRequired ? passport_fullname : "",
+      passport_number: visaRequired ? passport_number : "",
       department: "N/A",
       city: "N/A",
       involvement_role: "",
@@ -354,14 +405,15 @@ export async function submitRegistrationAction(submission) {
       is_media_verification: false,
       is_media_terms_and_conditions: false,
       basket_id: "",
-      registration_id: payload.registrationId || undefined,
+      registration_id: registrationId,
     };
+
     const registrationPayload = {
       form_data: [attendee],
-      recaptcha_token: payload.recaptchaToken,
+      recaptcha_token: recaptchaToken,
       recaptcha_version: "v3",
-      coupon_data: trustedTicket.is_free ? {} : payload.couponData || {},
-      applied_promo_code: trustedTicket.is_free ? "" : payload.promoCode || "",
+      coupon_data: {},
+      applied_promo_code: "",
       current_currency: trustedAvailability.current_currency || "NGN",
       payment_method: 0,
       uid: "",
@@ -372,17 +424,21 @@ export async function submitRegistrationAction(submission) {
       billing_po_box: "",
       billing_vat_number: "",
       billing_address: "",
-      terms_and_conditions: payload.terms,
-      age_confirm: payload.ageConfirm,
-      market_mail: payload.marketingConsent,
-      personal_data_terms_and_conditions: payload.terms,
+      terms_and_conditions: true,
+      age_confirm: true,
+      market_mail: marketingConsent,
+      personal_data_terms_and_conditions: true,
       total_ticket_count: 1,
       language: "english",
     };
 
     requestBody.append("payload", JSON.stringify(registrationPayload));
     if (hasUserDocument) {
-      requestBody.append("user_document_0", userDocument, userDocument.name);
+      requestBody.append(
+        "user_document_0",
+        userDocument,
+        userDocument.name || "document.jpg",
+      );
     }
 
     const response = await fetch(
@@ -402,20 +458,11 @@ export async function submitRegistrationAction(submission) {
     if (![200, 201].includes(response.status) || data?.status === false) {
       console.error("Registration API rejected the request:", {
         status: response.status,
-        ticketId: payload.ticketId,
+        ticketId: trustedTicket.id,
         hasUserDocument,
-        documentRequired: Boolean(payload.documentRequired),
+        documentRequired,
         solutionIdCount: solutionIds.length,
         apiMessage: data?.message || data?.detail || null,
-        validationFields: data?.validation_errors
-          ?.flatMap((entry) =>
-            Object.keys(entry?.error || entry?.errors || {}),
-          )
-          .filter(Boolean),
-        errorFields:
-          data?.errors && typeof data.errors === "object"
-            ? Object.keys(data.errors)
-            : [],
       });
 
       return {
@@ -451,11 +498,11 @@ export async function submitRegistrationAction(submission) {
     });
     const confirmationSnapshot = {
       confirmationId,
-      firstName: payload.firstName,
-      lastName: payload.lastName,
-      jobTitle: payload.jobTitle,
-      company: payload.company,
-      country: payload.countryName,
+      firstName,
+      lastName,
+      jobTitle,
+      company,
+      country: countryName,
       badgeCategory:
         trustedTicket.category_type_name ||
         trustedTicket.display_ticket_name ||
@@ -474,21 +521,15 @@ export async function submitRegistrationAction(submission) {
         maxAge: CONFIRMATION_LIFETIME_SECONDS,
       },
     );
-    const confirmationToken = createConfirmationToken(confirmationSnapshot);
-
     return {
       success: true,
-      confirmationId,
-      confirmationToken,
+      redirectTo: "/confirmation",
     };
   } catch (error) {
     console.error("Registration server action failed:", error);
     return {
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "The registration service is temporarily unavailable.",
+      message: "The registration service is temporarily unavailable.",
     };
   }
 }
@@ -569,7 +610,13 @@ export async function validatePromoCodeAction({
     if (!email?.trim()) {
       return { success: false, message: "Enter your email before validating a promo code." };
     }
-    if (!ticketId) return { success: false, message: "A ticket is required." };
+
+    const ticketConfig = await getPrimaryFreeTicketConfiguration();
+    const effectiveTicketId = ticketId || ticketConfig?.ticket?.id;
+    const effectivePrice = price ?? ticketConfig?.ticket?.priceAmount ?? 0;
+    const effectiveCurrency = currency || ticketConfig?.availability?.current_currency || "NGN";
+
+    if (!effectiveTicketId) return { success: false, message: "A ticket is required." };
 
     const formToken = await getFormToken();
     const response = await fetch(getApiUrl("microsite/v1/validate-coupon"), {
@@ -580,11 +627,11 @@ export async function validatePromoCodeAction({
       },
       body: JSON.stringify({
         coupon_code: code,
-        current_currency: currency || "NGN",
+        current_currency: effectiveCurrency,
         ticket_selections: [
           {
-            ticketID: ticketId,
-            priceFloat: Number(price || 0),
+            ticketID: effectiveTicketId,
+            priceFloat: Number(effectivePrice || 0),
             quantity: 1,
           },
         ],
@@ -608,9 +655,6 @@ export async function validatePromoCodeAction({
       success: true,
       message: data?.message || "Promo code applied.",
       couponData: data?.coupon_data || {},
-      discountedTickets: data?.discounted_tickets || [],
-      newTotal: data?.new_total,
-      discountAmount: data?.discount_amount,
     };
   } catch (error) {
     console.error("Promo validation server action failed:", error);

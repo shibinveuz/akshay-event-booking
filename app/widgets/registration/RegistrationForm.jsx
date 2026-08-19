@@ -17,7 +17,6 @@ import { useCurrency } from "@/app/context/CurrencyContext";
 
 import {
   submitRegistrationAction,
-  checkEmailAction,
   validatePromoCodeAction,
 } from "@/app/lib/api/registration";
 import PhoneField from "@/app/components/form/PhoneField/PhoneField";
@@ -51,13 +50,6 @@ function getDialCode(country) {
   ).replace(/^\+/, "");
 }
 
-function getConfirmationId(result) {
-  const candidates = [result?.confirmationId];
-
-  return candidates.find(
-    (candidate) => typeof candidate === "string" && candidate.trim(),
-  );
-}
 
 function executeRecaptcha(siteKey) {
   if (!siteKey) {
@@ -146,6 +138,8 @@ export default function RegistrationForm({
   const [errors, setErrors] = useState({});
 
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+  const promoLoadingRef = useRef(false);
   const [couponData, setCouponData] = useState({});
   const [promoState, setPromoState] = useState({
     loading: false,
@@ -153,15 +147,8 @@ export default function RegistrationForm({
     success: false,
   });
 
-  // Email Validation State
-  const [emailStatus, setEmailStatus] = useState("idle"); // idle, validating, error, success
-  const [emailErrorMessage, setEmailErrorMessage] = useState("");
-
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  const [confirmationId, setConfirmationId] = useState("");
-
-  const [confirmationToken, setConfirmationToken] = useState("");
 
   const [showReminderModal, setShowReminderModal] = useState(false);
 
@@ -287,7 +274,6 @@ export default function RegistrationForm({
         if (!trimmed) return "Email address is required.";
         if (!isValidEmail(trimmed))
           return "Please enter a valid email address.";
-        if (emailStatus === "error") return emailErrorMessage;
         return "";
       }
       case "confirmemail": {
@@ -329,10 +315,6 @@ export default function RegistrationForm({
     setTouched((prev) => ({ ...prev, [name]: true }));
     const errorMsg = validateSingleField(name, formData[name]);
     setErrors((prev) => ({ ...prev, [name]: errorMsg }));
-
-    if (name === "email" && isValidEmail(String(formData.email || "").trim())) {
-      handleEmailBlur();
-    }
   };
 
   /*
@@ -359,11 +341,6 @@ export default function RegistrationForm({
       }
 
       if (name === "email") {
-        checkedEmailRef.current = "";
-        if (emailStatus !== "idle") {
-          setEmailStatus("idle");
-          setEmailErrorMessage("");
-        }
         if (touched.confirmemail || errors.confirmemail) {
           const confirmErr = validateSingleField(
             "confirmemail",
@@ -475,10 +452,6 @@ export default function RegistrationForm({
       validationErrors.email = "Email address is required.";
     } else if (!isValidEmail(trimmedEmail)) {
       validationErrors.email = "Please enter a valid email address.";
-    } else if (emailStatus === "error") {
-      validationErrors.email = emailErrorMessage;
-    } else if (emailStatus === "validating") {
-      validationErrors.email = "Please wait while we validate your email.";
     }
 
     const trimmedConfirmEmail = formData.confirmemail.trim();
@@ -623,62 +596,7 @@ export default function RegistrationForm({
     }));
   };
 
-  const checkedEmailRef = useRef("");
 
-  const handleEmailBlur = async () => {
-    const email = formData.email.trim();
-    if (!isValidEmail(email)) {
-      return; // Wait for a valid format before checking
-    }
-
-    if (checkedEmailRef.current === email && emailStatus !== "idle") {
-      return;
-    }
-
-    checkedEmailRef.current = email;
-    setEmailStatus("validating");
-    setEmailErrorMessage("");
-
-    try {
-      const result = await checkEmailAction(email, selectedTicket?.id);
-
-      if (!result.success && result.error) {
-        // Silently fail if API is not available to avoid blocking development
-        console.warn(
-          "Email validation check failed (endpoint might not exist).",
-        );
-        setEmailStatus("idle");
-        checkedEmailRef.current = "";
-        return;
-      }
-
-      if (result.isCompleted) {
-        setEmailStatus("error");
-        setEmailErrorMessage(
-          result.message ||
-            "This email address is already registered. Please use a different email address or log in to your existing account.",
-        );
-      } else if (result.isAbandoned) {
-        setEmailStatus("success");
-        // Automatically populate available fields
-        const abandonedData = result.data || {};
-
-        setFormData((prev) => ({
-          ...prev,
-          firstName: abandonedData.firstName || prev.firstName,
-          lastName: abandonedData.lastName || prev.lastName,
-          registrationId: abandonedData.registrationId || "",
-          // Add more fields here if provided safely by the backend
-        }));
-      } else {
-        setEmailStatus("success");
-      }
-    } catch (error) {
-      console.error("Email validation error:", error);
-      setEmailStatus("idle"); // reset on error so they aren't blocked
-      checkedEmailRef.current = "";
-    }
-  };
 
   /*
    * ----------------------------------------------------
@@ -689,9 +607,11 @@ export default function RegistrationForm({
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (submitting) {
+    if (submitting || submittingRef.current) {
       return;
     }
+
+    submittingRef.current = true;
 
     setErrors({});
 
@@ -728,47 +648,7 @@ export default function RegistrationForm({
     }
 
     const cleanMobile = formData.mobile.replace(/\D/g, "");
-
-    // The registration API expects an E.164 calling code (for example +971).
-    // Sending digits only makes its phone parser fall back to the default code.
     const cleanPhoneCode = `+${String(phoneCode).replace(/\D/g, "")}`;
-
-    const country = countryOptions.find(
-      (item) => String(item.value) === String(formData.countryofresidence),
-    );
-    const nationality = countryOptions.find(
-      (item) => String(item.value) === String(formData.nationality),
-    );
-
-    const payload = {
-      ...formData,
-
-      phoneCode: cleanPhoneCode,
-
-      mobile: cleanMobile,
-
-      mobileFull: `${cleanPhoneCode}${cleanMobile}`,
-
-      ticketId: selectedTicket?.id ?? null,
-
-      ticketEncryptedId: selectedTicket?.encryptedId || "",
-
-      badgeCategory: selectedTicket?.category || "VISITOR",
-
-      documentRequired: Boolean(selectedTicket?.documentRequired),
-
-      currency: currency || selectedTicket?.currency || "NGN",
-
-      countryName: country?.label || formData.countryofresidence,
-
-      nationalityName: nationality?.label || formData.nationality,
-
-      visaForm,
-
-      registrationId: formData.registrationId || undefined,
-
-      couponData,
-    };
 
     try {
       setSubmitting(true);
@@ -778,10 +658,72 @@ export default function RegistrationForm({
       );
 
       const submission = new FormData();
+      submission.append("firstName", formData.firstName.trim());
+      submission.append("lastName", formData.lastName.trim());
+      submission.append("email", formData.email.trim());
+      submission.append("mobile", cleanMobile);
+      submission.append("phoneCode", cleanPhoneCode);
+      submission.append("countryofresidence", formData.countryofresidence);
+      submission.append("nationality", formData.nationality);
+      submission.append("company", formData.company.trim());
+      submission.append("companyType", formData.companyType);
+      submission.append("industry", formData.industry);
+      submission.append("jobTitle", formData.jobTitle.trim());
+
+      if (Array.isArray(formData.interests)) {
+        formData.interests.forEach((interest) => {
+          submission.append("interests", String(interest));
+        });
+      }
+
+      submission.append("marketingConsent", formData.marketingConsent ? "1" : "0");
       submission.append(
-        "payload",
-        JSON.stringify({ ...payload, recaptchaToken }),
+        "visa_required",
+        formData.visa_required === "yes" ? "yes" : "no",
       );
+
+      if (formData.visa_required === "yes" && visaForm) {
+        if (
+          visaForm.visa_dob?.yyyy &&
+          visaForm.visa_dob?.mm &&
+          visaForm.visa_dob?.dd
+        ) {
+          submission.append(
+            "visa_dob",
+            `${visaForm.visa_dob.yyyy}-${visaForm.visa_dob.mm}-${visaForm.visa_dob.dd}`,
+          );
+        }
+        if (
+          visaForm.passport_expiry_date?.yyyy &&
+          visaForm.passport_expiry_date?.mm &&
+          visaForm.passport_expiry_date?.dd
+        ) {
+          submission.append(
+            "passport_expiry_date",
+            `${visaForm.passport_expiry_date.yyyy}-${visaForm.passport_expiry_date.mm}-${visaForm.passport_expiry_date.dd}`,
+          );
+        }
+        if (visaForm.passport_nationality) {
+          submission.append("passport_nationality", visaForm.passport_nationality);
+        }
+        if (visaForm.passport_country) {
+          submission.append("passport_country", visaForm.passport_country);
+        }
+        if (visaForm.passport_fullname) {
+          submission.append("passport_fullname", visaForm.passport_fullname);
+        }
+        if (visaForm.passport_number) {
+          submission.append("passport_number", visaForm.passport_number);
+        }
+      }
+
+      if (formData.registrationId) {
+        submission.append("registrationId", formData.registrationId);
+      }
+
+
+      submission.append("recaptchaToken", recaptchaToken);
+
       if (documentFile) {
         submission.append("userDocument", documentFile);
       }
@@ -796,19 +738,6 @@ export default function RegistrationForm({
         return;
       }
 
-      const nextConfirmationId = getConfirmationId(result);
-
-      if (!nextConfirmationId) {
-        setErrors((previous) => ({
-          ...previous,
-          submit:
-            "Registration succeeded, but the confirmation reference was not returned.",
-        }));
-        return;
-      }
-
-      setConfirmationId(nextConfirmationId);
-      setConfirmationToken(result.confirmationToken || "");
 
       /*
        * Registration success
@@ -840,6 +769,7 @@ export default function RegistrationForm({
         submit: error?.message || "Something went wrong. Please try again.",
       }));
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -873,8 +803,9 @@ export default function RegistrationForm({
    */
 
   const handlePromoValidate = async () => {
-    if (promoState.loading) return;
+    if (promoState.loading || promoLoadingRef.current) return;
 
+    promoLoadingRef.current = true;
     setPromoState({ loading: true, message: "", success: false });
     const result = await validatePromoCodeAction({
       couponCode: formData.promoCode,
@@ -891,6 +822,7 @@ export default function RegistrationForm({
         message: result.message || "Promo code applied.",
         success: true,
       });
+      promoLoadingRef.current = false;
       return;
     }
 
@@ -900,6 +832,7 @@ export default function RegistrationForm({
       message: result?.message || "Invalid promo code.",
       success: false,
     });
+    promoLoadingRef.current = false;
   };
 
   /*
@@ -910,14 +843,7 @@ export default function RegistrationForm({
 
   const handleSuccessConfirm = () => {
     setShowSuccessModal(false);
-
-    const params = new URLSearchParams({ id: confirmationId });
-
-    if (confirmationToken) {
-      params.set("token", confirmationToken);
-    }
-
-    router.push(`/confirmation?${params.toString()}`);
+    router.push("/confirmation");
   };
 
   /*
@@ -1052,18 +978,10 @@ export default function RegistrationForm({
                       value={formData.email}
                       onChange={handleChange}
                       onBlur={() => handleBlur("email")}
-                      error={
-                        errors.email ||
-                        (emailStatus === "error" ? emailErrorMessage : "")
-                      }
+                      error={errors.email}
                       autoComplete="email"
                       required
                     />
-                    {emailStatus === "validating" && (
-                      <small className="text-muted d-block mt-1">
-                        Validating email...
-                      </small>
-                    )}
                   </div>
 
                   {/* CONFIRM EMAIL */}

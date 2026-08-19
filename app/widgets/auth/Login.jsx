@@ -7,11 +7,9 @@ import OtpForm from "./OtpForm";
 export default function Login() {
   const [step, setStep] = useState("login");
   const [email, setEmail] = useState("");
-  const [otpToken, setOtpToken] = useState("");
 
-  const handleOtpRequested = (userEmail, token) => {
+  const handleOtpRequested = (userEmail) => {
     setEmail(userEmail);
-    setOtpToken(token);
     setStep("otp");
   };
 
@@ -25,7 +23,6 @@ export default function Login() {
             ) : (
               <OtpForm
                 email={email}
-                initialOtpToken={otpToken}
                 onBack={() => setStep("login")}
               />
             )}

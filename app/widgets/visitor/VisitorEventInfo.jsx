@@ -18,13 +18,9 @@ export default function VisitorEventInfo({
 }) {
   const [visaMessage, setVisaMessage] = useState("");
 
-  const uid = visitor?.uid || visitor?.id;
-  const visaDownloadUrl =
-    visitor?.visaUrl?.includes("/download/")
-      ? visitor.visaUrl
-      : uid && visitor?.visaRequested
-        ? `/visitor-portal/download/visa?uid=${encodeURIComponent(uid)}`
-        : null;
+  const visaDownloadUrl = visitor?.visaUrl?.includes("/download/")
+    ? visitor.visaUrl
+    : null;
 
   const handleVisaDownloadClick = (e) => {
     if (!visaDownloadUrl) {

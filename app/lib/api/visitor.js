@@ -23,10 +23,28 @@ function apiUrl(path) {
   return `${baseUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
 }
 
-export async function verifyOtpAction(otpToken, otp, recaptchaToken = "") {
+export async function verifyOtpAction(arg1, arg2, arg3 = "") {
   try {
-    const code = otp?.trim();
-    if (!otpToken || !code) {
+    const cookieStore = await cookies();
+    let code = "";
+    let recaptchaToken = "";
+    let explicitOtpToken = "";
+
+    if (typeof arg2 === "string" && arg2.trim().length === 4) {
+      // Called as verifyOtpAction(otpToken, otpCode, recaptchaToken)
+      explicitOtpToken = arg1;
+      code = arg2.trim();
+      recaptchaToken = arg3;
+    } else {
+      // Called as verifyOtpAction(otpCode, recaptchaToken)
+      code = String(arg1 || "").trim();
+      recaptchaToken = String(arg2 || "").trim();
+    }
+
+    const activeOtpToken =
+      explicitOtpToken || cookieStore.get("visitor_otp_token")?.value;
+
+    if (!activeOtpToken || !code) {
       return { success: false, message: "OTP session and code are required." };
     }
     if (!recaptchaToken) {
@@ -41,7 +59,7 @@ export async function verifyOtpAction(otpToken, otp, recaptchaToken = "") {
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
-        Authorization: `Bearer ${otpToken}`,
+        Authorization: `Bearer ${activeOtpToken}`,
       },
       body: JSON.stringify({
         otp: code,
@@ -73,7 +91,6 @@ export async function verifyOtpAction(otpToken, otp, recaptchaToken = "") {
       };
     }
 
-    const cookieStore = await cookies();
     const options = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -93,6 +110,7 @@ export async function verifyOtpAction(otpToken, otp, recaptchaToken = "") {
       cookieStore.set(VISITOR_REFRESH_COOKIE, refreshToken, options);
     }
     cookieStore.delete(LEGACY_VISITOR_DATA_COOKIE);
+    cookieStore.delete("visitor_otp_token");
     revalidatePath("/", "layout");
     return { success: true };
   } catch (error) {
@@ -184,6 +202,24 @@ export async function getVisitorProfile() {
   return getCachedVisitorProfile();
 }
 
+/**
+ * Resolves the authenticated visitor's registration UID from the server session.
+ * Used by download route handlers — never exposed to the browser.
+ */
+export async function getVisitorUid() {
+  try {
+    const cookieStore = await cookies();
+    const accessToken = cookieStore.get(VISITOR_ACCESS_COOKIE)?.value;
+    if (!accessToken || !isUnexpiredToken(accessToken)) return null;
+    const payload = await fetchVisitorProfilePayload(accessToken);
+    if (!payload) return null;
+    const record = getVisitorRecord(payload);
+    return String(record?.uid || record?.id || record?.unique_id || "").trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 function getHistoryItems(payload) {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.data)) return payload.data;
@@ -217,11 +253,13 @@ function mapHistoryItems(payload) {
     performedByType:
       item.performed_by_type || (item.is_primary ? "Primary" : ""),
     status: item.status || item.result || "-",
-    ipAddress: item.ip_address || item.ip || "-",
   }));
 }
 
-export const getVisitorHistory = cache(async function getVisitorHistory({ page = 1, offset = 50 } = {}) {
+export const getVisitorHistory = cache(async function getVisitorHistory({
+  page = 1,
+  offset = 50,
+} = {}) {
   try {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get(VISITOR_ACCESS_COOKIE)?.value;
@@ -310,7 +348,8 @@ export async function updateVisitorProfileAction(fields) {
   try {
     const cookieStore = await cookies();
     const accessToken = cookieStore.get(VISITOR_ACCESS_COOKIE)?.value;
-    if (!accessToken || !isUnexpiredToken(accessToken)) return { success: false, message: "Your session has expired." };
+    if (!accessToken || !isUnexpiredToken(accessToken))
+      return { success: false, message: "Your session has expired." };
 
     // Protected identity fields are required by the backend serializer. Read
     // their canonical values from the authenticated profile so client input
@@ -322,8 +361,7 @@ export async function updateVisitorProfileAction(fields) {
       currentVisitor?.firstname || currentVisitor?.first_name || "";
     const lastName =
       currentVisitor?.lastname || currentVisitor?.last_name || "";
-    const email =
-      currentVisitor?.emailid || currentVisitor?.email || "";
+    const email = currentVisitor?.emailid || currentVisitor?.email || "";
 
     const registrationId =
       currentVisitor?.registration_id ||
@@ -351,10 +389,12 @@ export async function updateVisitorProfileAction(fields) {
     const cleanedMobile = String(fields.mobile || "").replace(/\D/g, "");
 
     const visaDob = formatDate(
-      currentVisitor?.visa_dob || currentVisitor?.passport_dob || currentVisitor?.dob
+      currentVisitor?.visa_dob ||
+        currentVisitor?.passport_dob ||
+        currentVisitor?.dob,
     );
     const passportExpiryDate = formatDate(
-      currentVisitor?.passport_expiry_date || currentVisitor?.passport_expiry
+      currentVisitor?.passport_expiry_date || currentVisitor?.passport_expiry,
     );
     const passportNationality =
       currentVisitor?.passport_nationality ||
@@ -370,80 +410,87 @@ export async function updateVisitorProfileAction(fields) {
       currentVisitor?.passport_full_name ||
       "";
     const passportNumber =
-      currentVisitor?.passport_number ||
-      currentVisitor?.passport_num ||
-      "";
+      currentVisitor?.passport_number || currentVisitor?.passport_num || "";
 
-    const response = await fetch(apiUrl("microsite/v1/login-user-retrive-update"), {
-      method: "PUT",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        form_data: {
-          ...(registrationId
-            ? {
-                registration_id: registrationId,
-                uid: registrationId,
-                id: registrationId,
-                unique_id: registrationId,
-              }
-            : {}),
-          firstname: firstName,
-          first_name: firstName,
-          lastname: lastName,
-          last_name: lastName,
-          emailid: String(email).trim().toLowerCase(),
-          email: String(email).trim().toLowerCase(),
-          Confirmemail: String(email).trim().toLowerCase(),
-          phoneNumber: cleanedMobile,
-          mobile: cleanedMobile,
-          phone_number: cleanedMobile,
-          country_code: fields.phoneCode || "",
-          phone_code: fields.phoneCode || "",
-          country: fields.country || "",
-          country_name: fields.country || "",
-          country_codes: fields.countryCode || "",
-          country_code_iso: fields.countryCode || "",
-          nationality: fields.nationality || "",
-          nationality_name: fields.nationality || "",
-          nationality_code: fields.nationalityCode || "",
-          companyname: fields.company?.trim() || "",
-          company_name: fields.company?.trim() || "",
-          jobtitle: fields.jobTitle?.trim() || "",
-          job_title: fields.jobTitle?.trim() || "",
-          designation: fields.jobTitle?.trim() || "",
-          companytype: fields.companyType || "",
-          company_type: fields.companyType || "",
-          industry: fields.industry || "",
-          visa_required: requestedVisaRequired,
-          visaRequired: requestedVisaRequired,
-          is_visa_required: requestedVisaRequired,
-          // Preserve Visa details saved by the dedicated Visa endpoint.
-          visa_dob: requestedVisaRequired ? visaDob : null,
-          passport_dob: requestedVisaRequired ? visaDob : null,
-          passport_expiry_date: requestedVisaRequired ? passportExpiryDate : null,
-          passport_expiry: requestedVisaRequired ? passportExpiryDate : null,
-          passport_nationality: requestedVisaRequired ? passportNationality : "",
-          passport_nationality_code: requestedVisaRequired ? passportNationality : "",
-          passport_country: requestedVisaRequired ? passportCountry : "",
-          passport_country_code: requestedVisaRequired ? passportCountry : "",
-          passport_fullname: requestedVisaRequired ? passportFullName : "",
-          passport_name: requestedVisaRequired ? passportFullName : "",
-          passport_full_name: requestedVisaRequired ? passportFullName : "",
-          passport_number: requestedVisaRequired ? passportNumber : "",
-          passport_num: requestedVisaRequired ? passportNumber : "",
-          solutions_products: fields.interestIds || [],
-          selected_services: fields.interestIds || [],
-          department: currentVisitor?.department || "N/A",
-          city: currentVisitor?.city || "N/A",
+    const response = await fetch(
+      apiUrl("microsite/v1/login-user-retrive-update"),
+      {
+        method: "PUT",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
         },
-      }),
-      cache: "no-store",
-      signal: AbortSignal.timeout(15000),
-    });
+        body: JSON.stringify({
+          form_data: {
+            ...(registrationId
+              ? {
+                  registration_id: registrationId,
+                  uid: registrationId,
+                  id: registrationId,
+                  unique_id: registrationId,
+                }
+              : {}),
+            firstname: firstName,
+            first_name: firstName,
+            lastname: lastName,
+            last_name: lastName,
+            emailid: String(email).trim().toLowerCase(),
+            email: String(email).trim().toLowerCase(),
+            Confirmemail: String(email).trim().toLowerCase(),
+            // phoneNumber: cleanedMobile,
+            // mobile: cleanedMobile,
+            // phone_number: cleanedMobile,
+            country_code: fields.phoneCode || "",
+            phone_code: fields.phoneCode || "",
+            country: fields.country || "",
+            country_name: fields.country || "",
+            country_codes: fields.countryCode || "",
+            country_code_iso: fields.countryCode || "",
+            nationality: fields.nationality || "",
+            nationality_name: fields.nationality || "",
+            nationality_code: fields.nationalityCode || "",
+            companyname: fields.company?.trim() || "",
+            company_name: fields.company?.trim() || "",
+            jobtitle: fields.jobTitle?.trim() || "",
+            job_title: fields.jobTitle?.trim() || "",
+            designation: fields.jobTitle?.trim() || "",
+            companytype: fields.companyType || "",
+            company_type: fields.companyType || "",
+            industry: fields.industry || "",
+            visa_required: requestedVisaRequired,
+            visaRequired: requestedVisaRequired,
+            is_visa_required: requestedVisaRequired,
+            // Preserve Visa details saved by the dedicated Visa endpoint.
+            visa_dob: requestedVisaRequired ? visaDob : null,
+            passport_dob: requestedVisaRequired ? visaDob : null,
+            passport_expiry_date: requestedVisaRequired
+              ? passportExpiryDate
+              : null,
+            passport_expiry: requestedVisaRequired ? passportExpiryDate : null,
+            passport_nationality: requestedVisaRequired
+              ? passportNationality
+              : "",
+            passport_nationality_code: requestedVisaRequired
+              ? passportNationality
+              : "",
+            passport_country: requestedVisaRequired ? passportCountry : "",
+            passport_country_code: requestedVisaRequired ? passportCountry : "",
+            passport_fullname: requestedVisaRequired ? passportFullName : "",
+            passport_name: requestedVisaRequired ? passportFullName : "",
+            passport_full_name: requestedVisaRequired ? passportFullName : "",
+            passport_number: requestedVisaRequired ? passportNumber : "",
+            passport_num: requestedVisaRequired ? passportNumber : "",
+            solutions_products: fields.interestIds || [],
+            selected_services: fields.interestIds || [],
+            department: currentVisitor?.department || "N/A",
+            city: currentVisitor?.city || "N/A",
+          },
+        }),
+        cache: "no-store",
+        signal: AbortSignal.timeout(15000),
+      },
+    );
     const data = await readResponse(response);
 
     if (!response.ok || data?.status === false) {
@@ -528,8 +575,10 @@ function googleCalendarUrl(startDate, endDate, location) {
 }
 
 function isEnabled(value) {
-  return value === true || value === 1 || ["1", "yes", "true"].includes(
-    String(value || "").toLowerCase(),
+  return (
+    value === true ||
+    value === 1 ||
+    ["1", "yes", "true"].includes(String(value || "").toLowerCase())
   );
 }
 
@@ -549,11 +598,11 @@ function getVisaRequired(visitor) {
 
   return Boolean(
     visitor?.visa_dob ||
-      visitor?.passport_expiry_date ||
-      visitor?.passport_nationality ||
-      visitor?.passport_country ||
-      visitor?.passport_fullname ||
-      visitor?.passport_number,
+    visitor?.passport_expiry_date ||
+    visitor?.passport_nationality ||
+    visitor?.passport_country ||
+    visitor?.passport_fullname ||
+    visitor?.passport_number,
   );
 }
 
@@ -569,8 +618,12 @@ function formatDate(date) {
   }
   if (typeof date === "object") {
     const yyyy = String(date.yyyy || date.year || "").trim();
-    const mm = String(date.mm || date.month || "").trim().padStart(2, "0");
-    const dd = String(date.dd || date.day || "").trim().padStart(2, "0");
+    const mm = String(date.mm || date.month || "")
+      .trim()
+      .padStart(2, "0");
+    const dd = String(date.dd || date.day || "")
+      .trim()
+      .padStart(2, "0");
     if (yyyy && mm !== "00" && dd !== "00") {
       return `${yyyy}-${mm}-${dd}`;
     }
@@ -589,7 +642,11 @@ function dateParts(value) {
   }
   const match = String(value).match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
   return match
-    ? { yyyy: match[1], mm: match[2].padStart(2, "0"), dd: match[3].padStart(2, "0") }
+    ? {
+        yyyy: match[1],
+        mm: match[2].padStart(2, "0"),
+        dd: match[3].padStart(2, "0"),
+      }
     : { yyyy: "", mm: "", dd: "" };
 }
 
@@ -634,8 +691,7 @@ function mapProfile(payload) {
           name: item?.name || item?.product_name || item?.title || "",
         }))
         .filter(
-          (item) =>
-            item.name && item.id !== null && item.id !== undefined,
+          (item) => item.name && item.id !== null && item.id !== undefined,
         )
         .map((item) => [String(item.id), item]),
     ).values(),
@@ -688,8 +744,6 @@ function mapProfile(payload) {
   const visaRequested = getVisaRequired(visitor);
 
   return {
-    id: visitor.id || uid,
-    uid,
     firstName: visitor.firstname || visitor.first_name || "",
     lastName: visitor.lastname || visitor.last_name || "",
     email: visitor.email || visitor.emailid || "",
@@ -705,7 +759,6 @@ function mapProfile(payload) {
       visitor.designation || visitor.jobtitle || visitor.job_title || "",
     companyType: visitor.company_type || visitor.companytype || "",
     industry: visitor.industry || "",
-    investorType: visitor.investor_type || visitor.investorType || "",
     badgeCategory:
       visitor.display_ticket_name ||
       visitor.ticket_name ||
@@ -713,7 +766,6 @@ function mapProfile(payload) {
       ticket.class_name ||
       "VISITOR",
     ticket: {
-      id: ticket.id || visitor.ticket_id || "",
       name:
         ticket.display_ticket_name ||
         ticket.class_name ||
@@ -722,41 +774,44 @@ function mapProfile(payload) {
         "Visitor Pass",
     },
     events,
-    confirmationEmailUrl: uid
-      ? `/visitor-portal/download/confirmation?uid=${encodeURIComponent(uid)}`
-      : "",
+    confirmationEmailUrl: "/visitor-portal/download/confirmation",
     visaRequested,
-    visaForm: {
-      passport_fullname:
-        visitor.passport_fullname ||
-        visitor.passport_name ||
-        visitor.passport_full_name ||
-        "",
-      visa_dob: dateParts(
-        visitor.visa_dob || visitor.passport_dob || visitor.dob,
-      ),
-      passport_number:
-        visitor.passport_number || visitor.passport_num || "",
-      passport_expiry_date: dateParts(
-        visitor.passport_expiry_date || visitor.passport_expiry,
-      ),
-      passport_nationality:
-        visitor.passport_nationality ||
-        visitor.passport_nationality_code ||
-        "",
-      passport_country:
-        visitor.passport_country ||
-        visitor.passport_country_code ||
-        "",
-    },
-    visaUrl:
-      visaRequested && uid
-        ? `/visitor-portal/download/visa?uid=${encodeURIComponent(uid)}`
-        : VISA_GUIDE_URL,
+    ...(visaRequested
+      ? {
+          visaForm: {
+            passport_fullname:
+              visitor.passport_fullname ||
+              visitor.passport_name ||
+              visitor.passport_full_name ||
+              "",
+            visa_dob: dateParts(
+              visitor.visa_dob || visitor.passport_dob || visitor.dob,
+            ),
+            passport_number:
+              visitor.passport_number || visitor.passport_num || "",
+            passport_expiry_date: dateParts(
+              visitor.passport_expiry_date || visitor.passport_expiry,
+            ),
+            passport_nationality:
+              visitor.passport_nationality ||
+              visitor.passport_nationality_code ||
+              "",
+            passport_country:
+              visitor.passport_country ||
+              visitor.passport_country_code ||
+              "",
+          },
+        }
+      : {}),
+    visaUrl: visaRequested
+      ? "/visitor-portal/download/visa"
+      : VISA_GUIDE_URL,
     interests,
     interestOptions,
     interestIds: (() => {
-      const validOptionIdSet = new Set(interestOptions.map((opt) => String(opt.id)));
+      const validOptionIdSet = new Set(
+        interestOptions.map((opt) => String(opt.id)),
+      );
       const rawInterestIds =
         selectedInterestIds.length > 0
           ? selectedInterestIds
@@ -820,9 +875,18 @@ export async function requestOtpAction(
         message: "The OTP service returned an invalid response.",
       };
     }
+
+    const cookieStore = await cookies();
+    cookieStore.set("visitor_otp_token", otpToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 10 * 60,
+      path: "/",
+    });
+
     return {
       success: true,
-      otpToken,
       message: data?.message || "OTP has been sent to your email address.",
     };
   } catch (error) {

@@ -43,7 +43,7 @@ function executeRecaptcha(siteKey, action) {
   });
 }
 
-export default function OtpForm({ email, initialOtpToken, onBack }) {
+export default function OtpForm({ email, onBack }) {
   const router = useRouter();
   const { setAuthenticated } = useAuthState();
 
@@ -52,7 +52,7 @@ export default function OtpForm({ email, initialOtpToken, onBack }) {
   const [error, setError] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
-  const [otpToken, setOtpToken] = useState(initialOtpToken);
+  const resendingRef = useRef(false);
 
   const [secondsLeft, setSecondsLeft] = useState(OTP_EXPIRY_SECONDS);
 
@@ -171,7 +171,7 @@ export default function OtpForm({ email, initialOtpToken, onBack }) {
 
       const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
       const recaptchaToken = await executeRecaptcha(siteKey, "login");
-      const result = await verifyOtpAction(otpToken, code, recaptchaToken);
+      const result = await verifyOtpAction(code, recaptchaToken);
 
       if (!result?.success) {
         throw new Error(result?.message || "Invalid OTP code.");
@@ -188,11 +188,12 @@ export default function OtpForm({ email, initialOtpToken, onBack }) {
   };
 
   const handleResend = async () => {
-    if (resending) {
+    if (resending || resendingRef.current) {
       return;
     }
 
     try {
+      resendingRef.current = true;
       setResending(true);
       setError("");
 
@@ -205,7 +206,6 @@ export default function OtpForm({ email, initialOtpToken, onBack }) {
         throw new Error(result?.message || "Unable to resend OTP.");
       }
 
-      setOtpToken(result.otpToken);
       setOtp(Array(OTP_LENGTH).fill(""));
       setSecondsLeft(OTP_EXPIRY_SECONDS);
 
@@ -215,6 +215,7 @@ export default function OtpForm({ email, initialOtpToken, onBack }) {
     } catch (error) {
       setError(error?.message || "Unable to resend OTP. Please try again.");
     } finally {
+      resendingRef.current = false;
       setResending(false);
     }
   };

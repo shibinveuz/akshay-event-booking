@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Mail, ShieldCheck } from "lucide-react";
 import { requestOtpAction } from "@/app/lib/api/visitor";
 import { isValidEmail } from "@/app/lib/validation";
@@ -105,24 +105,29 @@ export default function LoginForm({ onOtpRequested }) {
     }
   }, [siteKey]);
 
+  const submittingRef = useRef(false);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (submitting) {
+    if (submitting || submittingRef.current) {
       return;
     }
 
+    submittingRef.current = true;
     setError("");
 
     const trimmedEmail = email.trim();
 
     if (!trimmedEmail) {
       setError("Email address is required.");
+      submittingRef.current = false;
       return;
     }
 
     if (!isValidEmail(trimmedEmail)) {
       setError("Please enter a valid email address.");
+      submittingRef.current = false;
       return;
     }
 
@@ -137,10 +142,11 @@ export default function LoginForm({ onOtpRequested }) {
         throw new Error(result?.message || "Unable to send OTP.");
       }
 
-      onOtpRequested(trimmedEmail, result.otpToken);
+      onOtpRequested(trimmedEmail);
     } catch (error) {
       setError(error?.message || "Unable to send OTP. Please try again.");
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };

@@ -1,10 +1,6 @@
 import { redirect } from "next/navigation";
 import VisitorPortal from "@/app/widgets/visitor/VisitorPortal";
-import {
-  getVisitorHistory,
-  getVisitorProfile,
-} from "@/app/lib/api/visitor";
-import { getVisaCountries } from "@/app/lib/api/registration";
+import { getVisitorProfile } from "@/app/lib/api/visitor";
 
 export const metadata = {
   title: "Visitor Portal | GITEX NIGERIA 2026",
@@ -20,12 +16,5 @@ export default async function VisitorPortalPage() {
     redirect("/login");
   }
 
-  const [history, countries] = await Promise.all([
-    getVisitorHistory(),
-    getVisaCountries().catch(() => []),
-  ]);
-
-  return (
-    <VisitorPortal visitor={visitor} history={history} countries={countries} />
-  );
+  return <VisitorPortal visitor={visitor} />;
 }

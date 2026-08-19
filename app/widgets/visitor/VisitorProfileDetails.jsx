@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Save, X } from "lucide-react";
 import { updateVisitorProfileAction } from "@/app/lib/api/visitor";
@@ -55,6 +55,7 @@ export default function VisitorProfileDetails({
   countries = [],
   editing,
   onEditingChange,
+  loadCountries,
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -115,8 +116,11 @@ export default function VisitorProfileDetails({
     return Object.keys(nextErrors).length === 0;
   };
 
+  const savingRef = useRef(false);
+
   const handleSave = async () => {
-    if (saving || !validate()) return;
+    if (saving || savingRef.current || !validate()) return;
+    savingRef.current = true;
     setSaving(true);
     setApiError("");
     setMessage("");
@@ -137,6 +141,7 @@ export default function VisitorProfileDetails({
         "The profile request could not reach the server. Check your connection and try again.",
       );
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
@@ -338,7 +343,14 @@ export default function VisitorProfileDetails({
         onChange={(value) => {
           if (!editing) return;
           setField("visaRequired", value);
-          setShowVisaModal(value === "yes");
+          if (value === "yes") {
+            if (typeof loadCountries === "function") {
+              loadCountries();
+            }
+            setShowVisaModal(true);
+          } else {
+            setShowVisaModal(false);
+          }
         }}
       />
 
@@ -356,7 +368,7 @@ export default function VisitorProfileDetails({
         show={showVisaModal}
         onHide={() => setShowVisaModal(false)}
         countries={countries}
-        registrationId={visitor.uid || visitor.id}
+        registrationId=""
         initialValues={visitor.visaForm}
         accessContext="visitor"
       />

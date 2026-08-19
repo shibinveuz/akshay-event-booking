@@ -214,11 +214,12 @@ export const getStoredConfirmationDetails = cache(async function getStoredConfir
   try {
     const data = JSON.parse(decodeURIComponent(storedValue));
 
-    if (String(data?.confirmationId) !== String(confirmationId)) {
+    if (confirmationId && String(data?.confirmationId) !== String(confirmationId)) {
       return null;
     }
 
-    return addConfirmationLinks(data, confirmationId);
+    const resolvedId = confirmationId || data?.confirmationId || data?.registrationId || "";
+    return addConfirmationLinks(data, resolvedId);
   } catch {
     return null;
   }

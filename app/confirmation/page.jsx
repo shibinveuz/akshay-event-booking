@@ -27,7 +27,13 @@ export default async function ConfirmationPage({ searchParams }) {
     : rawConfirmationToken;
 
   if (!confirmationId) {
-    return <Confirmation data={null} countries={await countriesPromise} />;
+    const storedConfirmation = await getStoredConfirmationDetails();
+    return (
+      <Confirmation
+        data={storedConfirmation}
+        countries={await countriesPromise}
+      />
+    );
   }
 
   // The encrypted URL snapshot and the HTTP-only snapshot cookie are created by

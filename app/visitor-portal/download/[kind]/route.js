@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { VISITOR_ACCESS_COOKIE } from "@/app/lib/auth-cookies";
+import { getVisitorUid } from "@/app/lib/api/visitor";
 
 const DOWNLOAD_PATHS = {
   confirmation: "microsite/v1/download-confirmation-email-template",
@@ -11,15 +12,20 @@ export const dynamic = "force-dynamic";
 export async function GET(request, { params }) {
   const { kind } = await params;
   const endpoint = DOWNLOAD_PATHS[kind];
-  const uid = new URL(request.url).searchParams.get("uid");
   const cookieStore = await cookies();
   const accessToken = cookieStore.get(VISITOR_ACCESS_COOKIE)?.value;
 
-  if (!endpoint || !uid) {
+  if (!endpoint) {
     return Response.json({ message: "Invalid download request." }, { status: 400 });
   }
   if (!accessToken) {
     return Response.json({ message: "Authentication required." }, { status: 401 });
+  }
+
+  // Resolve the visitor UID from the authenticated session — never from the URL.
+  const uid = await getVisitorUid();
+  if (!uid) {
+    return Response.json({ message: "Visitor session could not be resolved." }, { status: 401 });
   }
 
   const baseUrl = process.env.BACKEND_BASE_URL;

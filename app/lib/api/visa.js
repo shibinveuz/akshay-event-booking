@@ -5,8 +5,10 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import {
   CONFIRMATION_ACCESS_COOKIE,
+  CONFIRMATION_DATA_COOKIE,
   VISITOR_ACCESS_COOKIE,
 } from "@/app/lib/auth-cookies";
+import { getVisitorUid } from "@/app/lib/api/visitor";
 
 function apiUrl(path) {
   const baseUrl = process.env.BACKEND_BASE_URL;
@@ -80,7 +82,26 @@ export async function submitVisaApplicationAction({
       };
     }
 
-    const uid = String(registrationId || "").trim();
+    let uid = String(registrationId || "").trim();
+
+    // For the visitor context resolve uid from the authenticated session so
+    // the browser never needs to supply it.
+    if (!uid && accessContext === "visitor") {
+      uid = (await getVisitorUid()) || "";
+    }
+
+    if (!uid && accessContext === "confirmation") {
+      const storedValue = cookieStore.get(CONFIRMATION_DATA_COOKIE)?.value;
+      if (storedValue) {
+        try {
+          const data = JSON.parse(decodeURIComponent(storedValue));
+          uid = String(data?.confirmationId || data?.registrationId || "").trim();
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+
     if (!uid) {
       return {
         success: false,

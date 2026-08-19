@@ -1,5 +1,4 @@
 export default function WelcomeSection({ data }) {
-  console.log("WelcomeSection data:", data);
   return (
     <div className="welcome-section">
       <h1 className="welcome-title">

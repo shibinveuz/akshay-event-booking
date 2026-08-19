@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import {
   getTickets,
   selectPrimaryFreeTicket,
 } from "./lib/api/tickets";
 import Tickets from "./widgets/tickets/Tickets";
+import Loader from "@/app/components/common/loader/Loader";
 
 export const metadata = {
   title: "GITEX NIGERIA 2026 | Tickets",
@@ -30,10 +32,18 @@ function mapTicket(ticket) {
   };
 }
 
-export default async function HomePage() {
+async function HomeTicketsContent() {
   const data = await getTickets();
   const freeTicket = selectPrimaryFreeTicket(data?.tickets || []);
   const tickets = freeTicket ? [mapTicket(freeTicket)] : [];
 
   return <Tickets tickets={tickets} />;
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<Loader />}>
+      <HomeTicketsContent />
+    </Suspense>
+  );
 }
