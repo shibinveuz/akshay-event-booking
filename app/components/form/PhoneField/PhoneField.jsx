@@ -10,6 +10,7 @@ export default function PhoneField({
   value = "",
   phoneCode: phoneCodeProp = "234",
   onChange,
+  onBlur,
   error,
   countriesList,
 }) {
@@ -59,7 +60,10 @@ export default function PhoneField({
             autoComplete="tel"
             value={mobile}
             onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
+            onBlur={(event) => {
+              setFocused(false);
+              onBlur?.(event);
+            }}
             onChange={(event) =>
               updateField(
                 "mobile",

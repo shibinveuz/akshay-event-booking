@@ -15,6 +15,7 @@ import {
 import { getPrimaryFreeTicketConfiguration } from "@/app/lib/api/tickets";
 import { getDefaultEventDetails } from "@/app/lib/event-details";
 import { getCountryItems } from "@/app/lib/countries";
+import { isValidEmail, validatePhoneNumber } from "@/app/lib/validation";
 
 function getApiUrl(path) {
   const baseUrl = process.env.BACKEND_BASE_URL;
@@ -216,6 +217,32 @@ export async function submitRegistrationAction(submission) {
       return {
         success: false,
         message: "The selected ticket is invalid.",
+      };
+    }
+
+    if (!payload.firstName?.trim() || !payload.lastName?.trim()) {
+      return {
+        success: false,
+        message: "First and last names are required.",
+      };
+    }
+
+    if (!isValidEmail(payload.email)) {
+      return {
+        success: false,
+        message: "Please enter a valid email address.",
+      };
+    }
+
+    const phoneValidation = validatePhoneNumber(
+      payload.mobile,
+      payload.phoneCode,
+      payload.phoneCountry || payload.countryofresidence,
+    );
+    if (!phoneValidation.isValid) {
+      return {
+        success: false,
+        message: phoneValidation.message,
       };
     }
 

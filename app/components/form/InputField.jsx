@@ -22,8 +22,12 @@ export default function InputField({
   ...rest
 }) {
   return (
-    <div className={`floating-label-wrapper ${containerClassName}`.trim()}>
-      <div className="floating-label">
+    <div
+      className={`floating-label-wrapper ${containerClassName}${
+        error ? " has-error" : ""
+      }`.trim()}
+    >
+      <div className={`floating-label${error ? " error is-invalid" : ""}`}>
         <input
           id={id}
           name={name || id}
@@ -37,7 +41,7 @@ export default function InputField({
           onCopy={onCopy}
           onPaste={onPaste}
           disabled={disabled}
-          className={className}
+          className={`${className}${error ? " is-invalid error" : ""}`.trim()}
           {...rest}
         />
         {label ? (

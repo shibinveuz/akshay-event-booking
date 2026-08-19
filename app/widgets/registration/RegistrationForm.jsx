@@ -26,10 +26,16 @@ import SelectField from "@/app/components/form/SelectField/SelectField";
 import VisaApplyModal from "./VisaApplyModal";
 import VisaQuestion from "./VisaQuestion";
 import { isVisaFormComplete, useVisaForm } from "./useVisaForm";
+import { COMPANY_TYPE_OPTIONS, INDUSTRY_OPTIONS } from "./profileOptions";
 import {
-  COMPANY_TYPE_OPTIONS,
-  INDUSTRY_OPTIONS,
-} from "./profileOptions";
+  isValidEmail,
+  validatePhoneNumber,
+  validateName,
+  validateTextField,
+  validateJobTitle,
+  validateCompanyName,
+  validateVisaForm,
+} from "@/app/lib/validation";
 
 const REMINDER_TIME = 30 * 60 * 1000;
 const RECAPTCHA_SCRIPT_ID = "registration-recaptcha-v3";
@@ -234,15 +240,99 @@ export default function RegistrationForm({
    */
 
   const setField = (name, value) => {
-    setFormData((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
+    setFormData((previous) => {
+      const nextFormData = {
+        ...previous,
+        [name]: value,
+      };
 
-    setErrors((previous) => ({
-      ...previous,
-      [name]: "",
-    }));
+      if (touched[name] || errors[name] || (name === "mobile" && value)) {
+        const errorMsg = validateSingleField(name, value, nextFormData);
+        setErrors((prev) => ({
+          ...prev,
+          [name]: errorMsg,
+        }));
+      }
+
+      if (name === "phoneCode" || name === "phoneCountry") {
+        if (touched.mobile || errors.mobile || previous.mobile) {
+          const mobileErr = validateSingleField("mobile", previous.mobile, nextFormData);
+          setErrors((prev) => ({
+            ...prev,
+            mobile: mobileErr,
+          }));
+        }
+      }
+
+      return nextFormData;
+    });
+  };
+
+  const [touched, setTouched] = useState({});
+
+  const validateSingleField = (name, value, currentFormData = formData) => {
+    const data = { ...currentFormData, [name]: value };
+
+    switch (name) {
+      case "firstName":
+        return validateName(value, "First name");
+      case "lastName":
+        return validateName(value, "Last name");
+      case "countryofresidence":
+        return value ? "" : "Country of residence is required.";
+      case "nationality":
+        return value ? "" : "Nationality is required.";
+      case "email": {
+        const trimmed = String(value || "").trim();
+        if (!trimmed) return "Email address is required.";
+        if (!isValidEmail(trimmed))
+          return "Please enter a valid email address.";
+        if (emailStatus === "error") return emailErrorMessage;
+        return "";
+      }
+      case "confirmemail": {
+        const trimmed = String(value || "").trim();
+        const mainEmail = String(data.email || "").trim();
+        if (!trimmed) return "Please confirm your email address.";
+        if (!isValidEmail(trimmed))
+          return "Please enter a valid email address.";
+        if (trimmed.toLowerCase() !== mainEmail.toLowerCase())
+          return "Email addresses do not match.";
+        return "";
+      }
+      case "mobile": {
+        const phoneVal = validatePhoneNumber(
+          value,
+          data.phoneCode,
+          data.phoneCountry || selectedCountry?.value || selectedCountry?.code,
+        );
+        return phoneVal.isValid ? "" : phoneVal.message;
+      }
+      case "company":
+        return validateCompanyName(value);
+      case "companyType":
+        return value ? "" : "Company type is required.";
+      case "industry":
+        return value ? "" : "Industry is required.";
+      case "jobTitle":
+        return validateJobTitle(value);
+      case "terms":
+        return value ? "" : "You must accept this acknowledgement.";
+      case "ageConfirm":
+        return value ? "" : "Age confirmation is required.";
+      default:
+        return "";
+    }
+  };
+
+  const handleBlur = (name) => {
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    const errorMsg = validateSingleField(name, formData[name]);
+    setErrors((prev) => ({ ...prev, [name]: errorMsg }));
+
+    if (name === "email" && isValidEmail(String(formData.email || "").trim())) {
+      handleEmailBlur();
+    }
   };
 
   /*
@@ -254,17 +344,45 @@ export default function RegistrationForm({
   const handleChange = (event) => {
     const { name, value } = event.target;
 
-    setField(name, value);
+    setFormData((previous) => {
+      const nextFormData = {
+        ...previous,
+        [name]: value,
+      };
+
+      if (touched[name] || errors[name]) {
+        const errorMsg = validateSingleField(name, value, nextFormData);
+        setErrors((prev) => ({
+          ...prev,
+          [name]: errorMsg,
+        }));
+      }
+
+      if (name === "email") {
+        checkedEmailRef.current = "";
+        if (emailStatus !== "idle") {
+          setEmailStatus("idle");
+          setEmailErrorMessage("");
+        }
+        if (touched.confirmemail || errors.confirmemail) {
+          const confirmErr = validateSingleField(
+            "confirmemail",
+            previous.confirmemail,
+            nextFormData,
+          );
+          setErrors((prev) => ({
+            ...prev,
+            confirmemail: confirmErr,
+          }));
+        }
+      }
+
+      return nextFormData;
+    });
 
     if (name === "promoCode") {
       setCouponData({});
       setPromoState({ loading: false, message: "", success: false });
-    }
-
-    // Reset email validation status if user types a new email
-    if (name === "email" && emailStatus !== "idle") {
-      setEmailStatus("idle");
-      setEmailErrorMessage("");
     }
   };
 
@@ -295,22 +413,34 @@ export default function RegistrationForm({
 
     const newPhoneCode = getDialCode(country);
 
-    setFormData((previous) => ({
-      ...previous,
+    setFormData((previous) => {
+      const nextFormData = {
+        ...previous,
+        countryofresidence: value,
+        phoneCode: newPhoneCode || previous.phoneCode,
+        phoneCountry: value,
+      };
 
-      countryofresidence: value,
+      if (touched.countryofresidence || errors.countryofresidence) {
+        const countryErr = validateSingleField(
+          "countryofresidence",
+          value,
+          nextFormData,
+        );
+        setErrors((prev) => ({ ...prev, countryofresidence: countryErr }));
+      }
 
-      phoneCode: newPhoneCode || previous.phoneCode,
+      if (touched.mobile || errors.mobile || previous.mobile) {
+        const mobileErr = validateSingleField(
+          "mobile",
+          previous.mobile,
+          nextFormData,
+        );
+        setErrors((prev) => ({ ...prev, mobile: mobileErr }));
+      }
 
-      phoneCountry: value,
-    }));
-
-    setErrors((previous) => ({
-      ...previous,
-
-      countryofresidence: "",
-      phoneCode: "",
-    }));
+      return nextFormData;
+    });
   };
 
   /*
@@ -322,12 +452,14 @@ export default function RegistrationForm({
   const validateForm = () => {
     const validationErrors = {};
 
-    if (!formData.firstName.trim()) {
-      validationErrors.firstName = "First name is required.";
+    const firstNameErr = validateName(formData.firstName, "First name");
+    if (firstNameErr) {
+      validationErrors.firstName = firstNameErr;
     }
 
-    if (!formData.lastName.trim()) {
-      validationErrors.lastName = "Last name is required.";
+    const lastNameErr = validateName(formData.lastName, "Last name");
+    if (lastNameErr) {
+      validationErrors.lastName = lastNameErr;
     }
 
     if (!formData.countryofresidence) {
@@ -338,9 +470,10 @@ export default function RegistrationForm({
       validationErrors.nationality = "Nationality is required.";
     }
 
-    if (!formData.email.trim()) {
+    const trimmedEmail = formData.email.trim();
+    if (!trimmedEmail) {
       validationErrors.email = "Email address is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+    } else if (!isValidEmail(trimmedEmail)) {
       validationErrors.email = "Please enter a valid email address.";
     } else if (emailStatus === "error") {
       validationErrors.email = emailErrorMessage;
@@ -348,21 +481,30 @@ export default function RegistrationForm({
       validationErrors.email = "Please wait while we validate your email.";
     }
 
-    if (!formData.confirmemail.trim()) {
+    const trimmedConfirmEmail = formData.confirmemail.trim();
+    if (!trimmedConfirmEmail) {
       validationErrors.confirmemail = "Please confirm your email address.";
+    } else if (!isValidEmail(trimmedConfirmEmail)) {
+      validationErrors.confirmemail =
+        "Please enter a valid confirmation email address.";
     } else if (
-      formData.email.trim().toLowerCase() !==
-      formData.confirmemail.trim().toLowerCase()
+      trimmedEmail.toLowerCase() !== trimmedConfirmEmail.toLowerCase()
     ) {
       validationErrors.confirmemail = "Email addresses do not match.";
     }
 
-    if (!formData.mobile.trim()) {
-      validationErrors.mobile = "Mobile number is required.";
+    const phoneValidation = validatePhoneNumber(
+      formData.mobile,
+      phoneCode,
+      formData.phoneCountry || selectedCountry?.value || selectedCountry?.code,
+    );
+    if (!phoneValidation.isValid) {
+      validationErrors.mobile = phoneValidation.message;
     }
 
-    if (!formData.company.trim()) {
-      validationErrors.company = "Company name is required.";
+    const companyErr = validateCompanyName(formData.company);
+    if (companyErr) {
+      validationErrors.company = companyErr;
     }
 
     if (!formData.companyType) {
@@ -373,8 +515,9 @@ export default function RegistrationForm({
       validationErrors.industry = "Industry is required.";
     }
 
-    if (!formData.jobTitle.trim()) {
-      validationErrors.jobTitle = "Job title is required.";
+    const jobTitleErr = validateJobTitle(formData.jobTitle);
+    if (jobTitleErr) {
+      validationErrors.jobTitle = jobTitleErr;
     }
 
     const requiredInterestCount = getRequiredInterestCount(interestOptions);
@@ -395,15 +538,12 @@ export default function RegistrationForm({
       validationErrors.ageConfirm = "Age confirmation is required.";
     }
 
-    // if (showVisaQuestion && !formData.visa_required) {
-    //   validationErrors.visa_required =
-    //     "Please select whether you require a visa invitation letter.";
-    // }
-
     if (formData.visa_required === "yes") {
-      if (!isVisaFormComplete(visaForm)) {
+      const visaValidation = validateVisaForm(visaForm);
+      if (!visaValidation.isValid) {
+        const firstVisaErr = Object.values(visaValidation.errors)[0];
         validationErrors.visa_required =
-          "Complete your visa invitation letter details.";
+          firstVisaErr || "Complete your visa invitation letter details.";
       }
     }
 
@@ -483,18 +623,19 @@ export default function RegistrationForm({
     }));
   };
 
-  /*
-   * ----------------------------------------------------
-   * EMAIL VALIDATION ON BLUR
-   * ----------------------------------------------------
-   */
+  const checkedEmailRef = useRef("");
 
   const handleEmailBlur = async () => {
     const email = formData.email.trim();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!isValidEmail(email)) {
       return; // Wait for a valid format before checking
     }
 
+    if (checkedEmailRef.current === email && emailStatus !== "idle") {
+      return;
+    }
+
+    checkedEmailRef.current = email;
     setEmailStatus("validating");
     setEmailErrorMessage("");
 
@@ -507,6 +648,7 @@ export default function RegistrationForm({
           "Email validation check failed (endpoint might not exist).",
         );
         setEmailStatus("idle");
+        checkedEmailRef.current = "";
         return;
       }
 
@@ -534,6 +676,7 @@ export default function RegistrationForm({
     } catch (error) {
       console.error("Email validation error:", error);
       setEmailStatus("idle"); // reset on error so they aren't blocked
+      checkedEmailRef.current = "";
     }
   };
 
@@ -551,6 +694,24 @@ export default function RegistrationForm({
     }
 
     setErrors({});
+
+    setTouched({
+      firstName: true,
+      lastName: true,
+      countryofresidence: true,
+      nationality: true,
+      email: true,
+      confirmemail: true,
+      mobile: true,
+      company: true,
+      companyType: true,
+      industry: true,
+      jobTitle: true,
+      interests: true,
+      terms: true,
+      ageConfirm: true,
+      visa_required: true,
+    });
 
     const validationErrors = validateForm();
 
@@ -683,16 +844,25 @@ export default function RegistrationForm({
     }
   };
 
+  const [visaModalError, setVisaModalError] = useState("");
+
   const handleVisaSubmit = () => {
-    if (!isVisaFormComplete(visaForm)) {
+    const visaValidation = validateVisaForm(visaForm);
+    if (!visaValidation.isValid) {
+      const firstErr = Object.values(visaValidation.errors)[0];
       setErrors((previous) => ({
         ...previous,
-        visa_required: "Complete all visa invitation letter fields.",
+        visa_required:
+          firstErr || "Complete all visa invitation letter fields.",
       }));
+      setVisaModalError(
+        firstErr || "Please complete all visa fields correctly.",
+      );
       return;
     }
 
     setErrors((previous) => ({ ...previous, visa_required: "" }));
+    setVisaModalError("");
     setShowVisaModal(false);
   };
 
@@ -818,6 +988,7 @@ export default function RegistrationForm({
                       label="First Name"
                       value={formData.firstName}
                       onChange={handleChange}
+                      onBlur={() => handleBlur("firstName")}
                       error={errors.firstName}
                       autoComplete="given-name"
                       required
@@ -833,6 +1004,7 @@ export default function RegistrationForm({
                       label="Last Name"
                       value={formData.lastName}
                       onChange={handleChange}
+                      onBlur={() => handleBlur("lastName")}
                       error={errors.lastName}
                       autoComplete="family-name"
                       required
@@ -879,7 +1051,7 @@ export default function RegistrationForm({
                       label="Email Address"
                       value={formData.email}
                       onChange={handleChange}
-                      onBlur={handleEmailBlur}
+                      onBlur={() => handleBlur("email")}
                       error={
                         errors.email ||
                         (emailStatus === "error" ? emailErrorMessage : "")
@@ -904,6 +1076,7 @@ export default function RegistrationForm({
                       label="Confirm Email Address"
                       value={formData.confirmemail}
                       onChange={handleChange}
+                      onBlur={() => handleBlur("confirmemail")}
                       error={errors.confirmemail}
                       autoComplete="email"
                       required
@@ -916,6 +1089,7 @@ export default function RegistrationForm({
                     <PhoneField
                       fields={formData}
                       setField={setField}
+                      onBlur={() => handleBlur("mobile")}
                       error={errors.mobile}
                       countriesList={countries}
                     />
@@ -930,6 +1104,7 @@ export default function RegistrationForm({
                       label="Job Title"
                       value={formData.jobTitle}
                       onChange={handleChange}
+                      onBlur={() => handleBlur("jobTitle")}
                       error={errors.jobTitle}
                       autoComplete="organization-title"
                       required
@@ -945,6 +1120,7 @@ export default function RegistrationForm({
                       label="Company Name"
                       value={formData.company}
                       onChange={handleChange}
+                      onBlur={() => handleBlur("company")}
                       error={errors.company}
                       autoComplete="organization"
                       required
@@ -1171,6 +1347,7 @@ export default function RegistrationForm({
         setVisaDateField={setVisaDateField}
         countries={countries}
         onSubmit={handleVisaSubmit}
+        error={visaModalError}
         isLoading={false}
       />
     </>

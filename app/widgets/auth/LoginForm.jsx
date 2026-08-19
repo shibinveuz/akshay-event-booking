@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Mail, ShieldCheck } from "lucide-react";
 import { requestOtpAction } from "@/app/lib/api/visitor";
+import { isValidEmail } from "@/app/lib/validation";
 
 const RECAPTCHA_SCRIPT_ID = "login-recaptcha-v3";
 
@@ -107,6 +108,10 @@ export default function LoginForm({ onOtpRequested }) {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    if (submitting) {
+      return;
+    }
+
     setError("");
 
     const trimmedEmail = email.trim();
@@ -116,7 +121,7 @@ export default function LoginForm({ onOtpRequested }) {
       return;
     }
 
-    if (!/\S+@\S+\.\S+/.test(trimmedEmail)) {
+    if (!isValidEmail(trimmedEmail)) {
       setError("Please enter a valid email address.");
       return;
     }

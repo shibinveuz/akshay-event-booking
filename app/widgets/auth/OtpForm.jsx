@@ -188,6 +188,10 @@ export default function OtpForm({ email, initialOtpToken, onBack }) {
   };
 
   const handleResend = async () => {
+    if (resending) {
+      return;
+    }
+
     try {
       setResending(true);
       setError("");

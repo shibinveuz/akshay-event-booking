@@ -7,14 +7,11 @@
   background: #fff;
 }
 
-
-
 .inner-banner {
   background: transparent !important;
   height: auto;
   padding-top: 20px;
 }
-
 
 .ticket-container {
   overflow: visible;
@@ -50,9 +47,11 @@
 .orb {
   position: absolute;
   border-radius: 50%;
-  background: linear-gradient(45deg,
-      rgba(255, 255, 255, 0.3),
-      rgba(255, 255, 255, 0.1));
+  background: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0.1)
+  );
   animation: float 6s ease-in-out infinite;
 }
 
@@ -85,7 +84,6 @@
 /* Reduced from 80px */
 
 @keyframes float {
-
   0%,
   100% {
     transform: translateY(0px) rotate(0deg);
@@ -99,7 +97,6 @@
 
   /* Reduced movement */
 }
-
 
 /* Left Section - Pricing - More compact */
 .ticket-left {
@@ -131,7 +128,6 @@
 }
 
 @keyframes bgZoomRotate {
-
   0% {
     transform: scale(1) rotate(0deg);
   }
@@ -139,7 +135,6 @@
   100% {
     transform: scale(1.2) rotate(10deg);
   }
-
 }
 
 .price {
@@ -203,10 +198,7 @@
 
 /* price-strike */
 
-
-
 @keyframes flashPriceBox {
-
   0%,
   100% {
     background: rgba(255, 255, 255, 0.2);
@@ -218,7 +210,9 @@
   50% {
     background: rgba(255, 255, 255, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3), inset 0 0 20px rgba(255, 255, 255, 0.2);
+    box-shadow:
+      0 8px 25px rgba(255, 255, 255, 0.3),
+      inset 0 0 20px rgba(255, 255, 255, 0.2);
     transform: scale(1.02);
   }
 }
@@ -231,12 +225,14 @@
 
 .ticket-badge {
   position: relative;
-  background: linear-gradient(45deg,
-      #0bbc28,
-      #05961d,
-      #0bbc28,
-      #05961d,
-      #0bbc28);
+  background: linear-gradient(
+    45deg,
+    #0bbc28,
+    #05961d,
+    #0bbc28,
+    #05961d,
+    #0bbc28
+  );
   background-size: 400% 400%;
   padding: 5px 10px;
   border-radius: 25px 0px 0px 25px;
@@ -252,39 +248,48 @@
   line-height: normal;
 }
 
-
 .ticket-badge:hover {
   transform: perspective(1000px) rotateX(0deg) scale(1.05);
   box-shadow: 0 12px 40px rgba(30, 64, 175, 0.5);
 }
 
 .ticket-badge::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -50%;
   left: -50%;
   width: 200%;
   height: 200%;
-  background: linear-gradient(45deg,
-      transparent,
-      transparent,
-      rgba(255, 255, 255, 0.3),
-      transparent,
-      transparent);
+  background: linear-gradient(
+    45deg,
+    transparent,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent,
+    transparent
+  );
   animation: shine 2s infinite;
   pointer-events: none;
 }
 
 .ticket-badge::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   background:
-    radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.2) 0%, transparent 50%),
-    radial-gradient(circle at 80% 50%, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+    radial-gradient(
+      circle at 20% 50%,
+      rgba(255, 255, 255, 0.2) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 50%,
+      rgba(255, 255, 255, 0.2) 0%,
+      transparent 50%
+    );
   pointer-events: none;
 }
 
@@ -342,8 +347,6 @@
   }
 }
 
-
-
 .premium-button {
   position: relative;
   display: inline-block;
@@ -358,13 +361,13 @@
   cursor: pointer;
   width: 100%;
   margin-top: 20px;
-  transition: .5s;
+  transition: 0.5s;
   text-align: center;
   text-decoration: none;
 }
 
 .premium-button:hover {
-  transition: .5s;
+  transition: 0.5s;
 }
 
 /* ticket-logo */
@@ -395,7 +398,6 @@
 }
 
 @keyframes floatBox {
-
   0%,
   100% {
     transform: translateY(0);
@@ -407,7 +409,6 @@
 }
 
 @keyframes pulseImage {
-
   0%,
   100% {
     transform: scale(1);
@@ -439,8 +440,6 @@
     width: 40%;
   }
 }
-
-
 
 /* Accessibility focus */
 .premium-button:focus {
@@ -477,9 +476,11 @@
 }
 
 .event-details {
-  background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.8),
-      rgba(255, 255, 255, 0.6));
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 0.6)
+  );
   border-radius: 12px;
   padding: 15px;
   margin: 15px 0;
@@ -523,10 +524,12 @@
   left: -75%;
   width: 50%;
   height: 100%;
-  background: linear-gradient(120deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.532) 50%,
-      rgba(255, 255, 255, 0) 100%);
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.532) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
   animation: shineMove 2s infinite;
   pointer-events: none;
   z-index: 1;
@@ -548,9 +551,6 @@
     left: 125%;
   }
 }
-
-
-
 
 .feature-icon {
   max-width: 20px;
@@ -802,10 +802,12 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(120deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.15) 50%,
-      transparent 100%);
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 50%,
+    transparent 100%
+  );
   transform: translateX(-100%);
   animation: shine 4s linear infinite;
   animation-delay: var(--shine-delay, 0s);
@@ -977,7 +979,6 @@
     display: none;
   }
 
-
   .price {
     font-size: 16px;
   }
@@ -1020,10 +1021,12 @@
   left: -50%;
   width: 200%;
   height: 200%;
-  background: linear-gradient(45deg,
-      transparent,
-      rgba(255, 255, 255, 0.3),
-      transparent);
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
   animation: shimmer 2s linear infinite;
 }
 
@@ -1039,7 +1042,6 @@
 }
 
 @keyframes flashPriceBox {
-
   0%,
   100% {
     background: rgba(255, 255, 255, 0.2);
@@ -1086,7 +1088,6 @@
 }
 
 @keyframes subTextPulse {
-
   0%,
   100% {
     opacity: 0.9;
@@ -1241,9 +1242,7 @@
   justify-content: center;
   padding: 0px 10px;
   filter: drop-shadow(2px 4px 6px #0000003d);
-
 }
-
 
 .ticket-offer-tag span {
   font-size: 12px;
@@ -1265,6 +1264,7 @@
 .get-your-pass-btn {
   -webkit-tap-highlight-color: transparent;
   -webkit-appearance: button;
+  appearance: button;
   background-color: #06102d;
   background-image: none;
   color: #fff;
@@ -1273,6 +1273,7 @@
   line-height: 1.5;
   margin: 0;
   -webkit-mask-image: -webkit-radial-gradient(#000, #fff);
+  mask-image: radial-gradient(#000, #fff);
   padding: 0;
   z-index: 3;
 }
@@ -1370,7 +1371,6 @@
   }
 }
 
-
 .ticket-all,
 .ticket-visitor-pass,
 .ticket-conference-pass {
@@ -1433,7 +1433,6 @@
 }
 
 @media (max-width: 1024px) {
-
   .ticket-all,
   .ticket-visitor-pass,
   .ticket-conference-pass {
@@ -1461,7 +1460,6 @@
 }
 
 @media (max-width: 600px) {
-
   .ticket-all,
   .ticket-visitor-pass,
   .ticket-conference-pass {
@@ -1472,7 +1470,6 @@
 }
 
 @media (max-width: 400px) {
-
   .ticket-all,
   .ticket-visitor-pass,
   .ticket-conference-pass {
@@ -1484,9 +1481,7 @@
 
 /* get your pass */
 
-
 /* multiple ticket color styles */
-
 
 /* ticket green color */
 
@@ -1510,9 +1505,12 @@
   color: #00a236;
 }
 
-
 .ticket-bg-green .feature-item {
-  background: linear-gradient(96deg, rgb(223 255 214) 0%, rgb(255 255 255 / 10%) 100%);
+  background: linear-gradient(
+    96deg,
+    rgb(223 255 214) 0%,
+    rgb(255 255 255 / 10%) 100%
+  );
   border: 1px solid #00892e40;
 }
 
@@ -1520,16 +1518,11 @@
   background: linear-gradient(138deg, #2bd901 0%, #66d100 48.77%, #008b00 100%);
 }
 
-
 .ticket-bg-green .detail-btn {
   background: linear-gradient(0deg, #00a236 0%, #003c14 100%);
 }
 
-
-
-
 /* ticket green color */
-
 
 /* ticket red color */
 .ticket-bg-red .ticket-left {
@@ -1557,11 +1550,15 @@
 }
 
 .ticket-bg-red .detail-btn {
-  background: linear-gradient(0deg, #C02926 -0.01%, #470706 99.99%);
+  background: linear-gradient(0deg, #c02926 -0.01%, #470706 99.99%);
 }
 
 .ticket-bg-red .feature-item {
-  background: linear-gradient(96deg, rgb(249 183 183 / 53%) 0%, rgb(255 255 255 / 10%) 100%);
+  background: linear-gradient(
+    96deg,
+    rgb(249 183 183 / 53%) 0%,
+    rgb(255 255 255 / 10%) 100%
+  );
   border: 1px solid #931c1a65;
 }
 
@@ -1582,16 +1579,19 @@
 }
 
 .ticket-bg-blue .ticket-right-content p span {
-  color: #050FAE;
+  color: #050fae;
 }
 
 .ticket-bg-blue .premium-button:hover {
-  background: #050FAE;
+  background: #050fae;
 }
 
-
 .ticket-bg-blue .feature-item {
-  background: linear-gradient(96deg, rgb(217 232 255) 0%, rgb(255 255 255) 100%);
+  background: linear-gradient(
+    96deg,
+    rgb(217 232 255) 0%,
+    rgb(255 255 255) 100%
+  );
   border: 1px solid #89a4ff53;
 }
 
@@ -1605,34 +1605,33 @@
 
 /* ticket Blue color */
 
-
-
 /* ticket Light green color */
-
 
 .ticket-bg-light-green .ticket-left {
   background: linear-gradient(138deg, #2bd901 0%, #66d100 48.77%, #008b00 100%);
 }
 
 .ticket-bg-light-green .feature-item .feature-icon {
-  background: #00B95E;
+  background: #00b95e;
 }
 
 .ticket-bg-light-green .ticket-right-content p span {
-  color: #00B95E;
+  color: #00b95e;
 }
 
 .ticket-bg-light-green .detail-btn {
-  background: linear-gradient(0deg, #A8EA58 -0.01%, #00B95E 99.99%) !important;
+  background: linear-gradient(0deg, #a8ea58 -0.01%, #00b95e 99.99%) !important;
 }
 
 .ticket-bg-light-green .feature-item {
-  background: linear-gradient(96deg, rgb(243 243 243) 0%, rgb(255 255 255 / 10%) 100%);
+  background: linear-gradient(
+    96deg,
+    rgb(243 243 243) 0%,
+    rgb(255 255 255 / 10%) 100%
+  );
 }
 
-
 /* ticket Light green color */
-
 
 /* ticket orange color */
 
@@ -1641,7 +1640,7 @@
 }
 
 .ticket-bg-orange .feature-item .feature-icon {
-  background: #F27809;
+  background: #f27809;
 }
 
 .ticket-bg-orange .detail-btn {
@@ -1649,15 +1648,23 @@
 }
 
 .ticket-bg-orange .horizondal-ticket-tag {
-  background: #F27809;
+  background: #f27809;
 }
 
 .ticket-bg-orange .feature-item {
-  background: linear-gradient(96deg, rgb(255 255 255 / 53%) 0%, rgb(255 255 255 / 10%) 100%);
+  background: linear-gradient(
+    96deg,
+    rgb(255 255 255 / 53%) 0%,
+    rgb(255 255 255 / 10%) 100%
+  );
 }
 
 .ticket-bg-orange .feature-item {
-  background: linear-gradient(96deg, rgb(229 126 43 / 12%) 0%, rgba(255, 255, 255, 0.1) 100%);
+  background: linear-gradient(
+    96deg,
+    rgb(229 126 43 / 12%) 0%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
   border: 1px solid #e26c1b57;
 }
 
@@ -1666,97 +1673,189 @@
 }
 
 .ticket-bg-orange .ticket-calender .calender-icon {
-  background: linear-gradient(90.24deg, rgb(226, 108, 27) 0.2%, rgb(238, 177, 44) 175.6%);
+  background: linear-gradient(
+    90.24deg,
+    rgb(226, 108, 27) 0.2%,
+    rgb(238, 177, 44) 175.6%
+  );
 }
 
 /* ticket orange color */
 
-
-
 /* ticket purple color */
 
 .ticket-bg-purple .ticket-left {
-  background: linear-gradient(0deg, #5D2B7E -0.01%, #431B5A 99.99%) !important;
+  background: linear-gradient(0deg, #5d2b7e -0.01%, #431b5a 99.99%) !important;
 }
 
 .ticket-bg-purple .detail-btn {
-  background: linear-gradient(0deg, #5D2B7E -0.01%, #431B5A 99.99%) !important;
+  background: linear-gradient(0deg, #5d2b7e -0.01%, #431b5a 99.99%) !important;
 }
 
 .ticket-bg-purple .feature-item {
-  background: linear-gradient(96deg, rgb(255 255 255 / 53%) 0%, rgb(255 255 255 / 10%) 100%);
+  background: linear-gradient(
+    96deg,
+    rgb(255 255 255 / 53%) 0%,
+    rgb(255 255 255 / 10%) 100%
+  );
 }
 
-
 .ticket-bg-purple .feature-item .feature-icon {
-  background: #5D2B7E;
+  background: #5d2b7e;
 }
 
 /* ticket purple color */
 .ticket-bg-purple-gr .ticket-left {
-  background: linear-gradient(138deg, #fe40d4 0%, #a62ac5 35.05%, #9325c2 42.68%, #8124ca 50.48%, #8121bf 54.13%, #521783 71.86%, #170a36 100%);
+  background: linear-gradient(
+    138deg,
+    #fe40d4 0%,
+    #a62ac5 35.05%,
+    #9325c2 42.68%,
+    #8124ca 50.48%,
+    #8121bf 54.13%,
+    #521783 71.86%,
+    #170a36 100%
+  );
 }
 
 .ticket-bg-purple-gr .ticket-calender .calender-icon {
-  background: linear-gradient(138deg, #fe40d4 0%, #a62ac5 35.05%, #9325c2 42.68%, #8124ca 50.48%, #8121bf 54.13%, #521783 71.86%, #170a36 100%);
+  background: linear-gradient(
+    138deg,
+    #fe40d4 0%,
+    #a62ac5 35.05%,
+    #9325c2 42.68%,
+    #8124ca 50.48%,
+    #8121bf 54.13%,
+    #521783 71.86%,
+    #170a36 100%
+  );
 }
 
 .ticket-bg-purple-gr .premium-button:hover {
   background: #8124ca;
 }
 
-
 .ticket-bg-purple-gr .detail-btn {
   color: #ffffff;
-  background: linear-gradient(138deg, #fe40d4 0%, #a62ac5 35.05%, #9325c2 42.68%, #8124ca 50.48%, #8121bf 54.13%, #521783 71.86%, #170a36 100%);
+  background: linear-gradient(
+    138deg,
+    #fe40d4 0%,
+    #a62ac5 35.05%,
+    #9325c2 42.68%,
+    #8124ca 50.48%,
+    #8121bf 54.13%,
+    #521783 71.86%,
+    #170a36 100%
+  );
 }
-
 
 .ticket-bg-purple-gr .feature-icon {
   background: linear-gradient(138deg, #28106b 0%, #a82ac9 64.66%, #bc17b8 100%);
 }
 
 .ticket-bg-purple-gr .feature-item {
-  background: linear-gradient(138deg, #c211bf21 0%, #ffffff17 64.66%, #ffffff1f 100%);
+  background: linear-gradient(
+    138deg,
+    #c211bf21 0%,
+    #ffffff17 64.66%,
+    #ffffff1f 100%
+  );
   border: 1px solid #d235cc45;
 }
-
 
 /* Premium Buyer */
 
 .ticket-bg-premium-buyer .ticket-left {
-  background: linear-gradient(138deg, rgb(20, 18, 18) 0%, rgb(20, 18, 18) 35.05%, rgb(20, 18, 18) 42.68%, rgb(0, 0, 0) 50.48%, rgb(0, 0, 0) 54.13%, rgb(12 12 12) 71.86%, rgb(31 30 30) 100%);
+  background: linear-gradient(
+    138deg,
+    rgb(20, 18, 18) 0%,
+    rgb(20, 18, 18) 35.05%,
+    rgb(20, 18, 18) 42.68%,
+    rgb(0, 0, 0) 50.48%,
+    rgb(0, 0, 0) 54.13%,
+    rgb(12 12 12) 71.86%,
+    rgb(31 30 30) 100%
+  );
 }
 
 .ticket-bg-premium-buyer .ticket-calender .calender-icon {
-  background: linear-gradient(138deg, #141212 0%, #141212 35.05%, #080808 42.68%, #000000 50.48%, #000000 54.13%, #000000 71.86%, #000000 100%);
+  background: linear-gradient(
+    138deg,
+    #141212 0%,
+    #141212 35.05%,
+    #080808 42.68%,
+    #000000 50.48%,
+    #000000 54.13%,
+    #000000 71.86%,
+    #000000 100%
+  );
 }
 
 .ticket-bg-premium-buyer .premium-button:hover {
   background: #8124ca;
 }
 
-
 .ticket-bg-premium-buyer .detail-btn {
   color: #ffffff;
-  background: linear-gradient(138deg, rgb(113 113 113) 0%, rgb(20, 18, 18) 35.05%, rgb(8, 8, 8) 42.68%, rgb(0, 0, 0) 50.48%, rgb(0, 0, 0) 54.13%, rgb(0, 0, 0) 71.86%, rgb(90 90 90) 100%);
+  background: linear-gradient(
+    138deg,
+    rgb(113 113 113) 0%,
+    rgb(20, 18, 18) 35.05%,
+    rgb(8, 8, 8) 42.68%,
+    rgb(0, 0, 0) 50.48%,
+    rgb(0, 0, 0) 54.13%,
+    rgb(0, 0, 0) 71.86%,
+    rgb(90 90 90) 100%
+  );
 }
 
 .ticket-bg-premium-buyer .feature-icon {
-  background: linear-gradient(138deg, rgb(20, 18, 18) 0%, rgb(0 0 0) 35.05%, rgb(8, 8, 8) 42.68%, rgb(0, 0, 0) 50.48%, rgb(21 21 21) 54.13%, rgb(0, 0, 0) 71.86%, rgb(27 27 27) 100%);
+  background: linear-gradient(
+    138deg,
+    rgb(20, 18, 18) 0%,
+    rgb(0 0 0) 35.05%,
+    rgb(8, 8, 8) 42.68%,
+    rgb(0, 0, 0) 50.48%,
+    rgb(21 21 21) 54.13%,
+    rgb(0, 0, 0) 71.86%,
+    rgb(27 27 27) 100%
+  );
 }
 
 .ticket-bg-premium-buyer .feature-item {
-  background: linear-gradient(138deg, #ffffff 0%, #25ff8000 64.66%, #ffffff 100%);
+  background: linear-gradient(
+    138deg,
+    #ffffff 0%,
+    #25ff8000 64.66%,
+    #ffffff 100%
+  );
   border: 1px solid #00000045;
 }
 
 .ticket-bg-premium-buyer .premium-button {
-  background: linear-gradient(138deg, #141212 0%, #141212 35.05%, #080808 42.68%, #000000 50.48%, #000000 54.13%, #000000 71.86%, #000000 100%);
-  transition: .5s;
+  background: linear-gradient(
+    138deg,
+    #141212 0%,
+    #141212 35.05%,
+    #080808 42.68%,
+    #000000 50.48%,
+    #000000 54.13%,
+    #000000 71.86%,
+    #000000 100%
+  );
+  transition: 0.5s;
 }
 
 .ticket-bg-premium-buyer .premium-button:hover {
-  background: linear-gradient(138deg, #141414 0%, #141212 35.05%, #080808 42.68%, #000000 50.48%, #000000 54.13%, #000000 71.86%, #000000 100%);
-  transition: .5s;
+  background: linear-gradient(
+    138deg,
+    #141414 0%,
+    #141212 35.05%,
+    #080808 42.68%,
+    #000000 50.48%,
+    #000000 54.13%,
+    #000000 71.86%,
+    #000000 100%
+  );
+  transition: 0.5s;
 }

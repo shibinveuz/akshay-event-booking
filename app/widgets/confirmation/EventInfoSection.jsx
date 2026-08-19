@@ -3,11 +3,28 @@
 import Link from "next/link";
 import { useState } from "react";
 import { CalendarPlus, Download, MapPin, IdCard, UserPlus } from "lucide-react";
-import VisaApplicationModal from "@/app/widgets/registration/VisaApplicationModal";
 
-export default function EventInfoSection({ data, countries = [] }) {
-  const event = data.event || {};
-  const [showVisaModal, setShowVisaModal] = useState(false);
+export default function EventInfoSection({ data }) {
+  const event = data?.event || {};
+  const [visaMessage, setVisaMessage] = useState("");
+
+  const registrationId = data?.registrationId;
+  const visaDownloadUrl = data?.visaUrl?.includes("/download/")
+    ? data.visaUrl
+    : data?.visaRequested && registrationId
+      ? `/confirmation/download/visa?id=${encodeURIComponent(registrationId)}`
+      : null;
+
+  const handleVisaDownloadClick = (e) => {
+    if (!visaDownloadUrl) {
+      e.preventDefault();
+      setVisaMessage(
+        "Visa Invitation Letter is not available yet. Please ensure your visa details are completed in your profile.",
+      );
+    } else {
+      setVisaMessage("");
+    }
+  };
 
   return (
     <div className="event-info-section">
@@ -44,7 +61,7 @@ export default function EventInfoSection({ data, countries = [] }) {
 
         <div className="event-actions-right">
           <a
-            href={data.confirmationEmailUrl}
+            href={data?.confirmationEmailUrl}
             className="action-link"
             target="_blank"
             rel="noopener noreferrer"
@@ -53,29 +70,42 @@ export default function EventInfoSection({ data, countries = [] }) {
             DOWNLOAD CONFIRMATION EMAIL
           </a>
 
-          <Link href={data.newRegistrationUrl || "/"} className="action-link">
+          <Link href={data?.newRegistrationUrl || "/"} className="action-link">
             <UserPlus size={17} />
             START NEW REGISTRATION
           </Link>
 
-          <button
-            type="button"
-            className="action-link"
-            onClick={() => setShowVisaModal(true)}
-          >
-            <IdCard size={17} />
-            Apply for Visa Invitation Letter
-          </button>
+          {visaDownloadUrl ? (
+            <a
+              href={visaDownloadUrl}
+              className="action-link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <IdCard size={17} />
+              Download Visa Invitation Letter
+            </a>
+          ) : (
+            <button
+              type="button"
+              className="action-link"
+              onClick={handleVisaDownloadClick}
+            >
+              <IdCard size={17} />
+              Download Visa Invitation Letter
+            </button>
+          )}
+
+          {visaMessage && (
+            <div
+              className="alert alert-warning py-2 px-3 mt-2 text-start"
+              style={{ fontSize: "13px" }}
+            >
+              {visaMessage}
+            </div>
+          )}
         </div>
       </div>
-
-      <VisaApplicationModal
-        show={showVisaModal}
-        onHide={() => setShowVisaModal(false)}
-        countries={countries}
-        registrationId={data.registrationId}
-        accessContext="confirmation"
-      />
     </div>
   );
 }

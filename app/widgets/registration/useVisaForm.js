@@ -26,15 +26,10 @@ function normalizeVisaForm(initialValues = {}) {
   };
 }
 
+import { validateVisaForm } from "@/app/lib/validation";
+
 export function isVisaFormComplete(visaForm) {
-  return Boolean(
-    visaForm.passport_fullname.trim() &&
-      visaForm.passport_number.trim() &&
-      Object.values(visaForm.visa_dob).every(Boolean) &&
-      Object.values(visaForm.passport_expiry_date).every(Boolean) &&
-      visaForm.passport_nationality &&
-      visaForm.passport_country,
-  );
+  return validateVisaForm(visaForm).isValid;
 }
 
 export function useVisaForm(initialValues = {}) {
